@@ -37,7 +37,7 @@ jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
         return JNI_ERR;
     }
 
-    jclass clazz = env->FindClass("com/live2d/demo/JniBridgeJava");
+    jclass clazz = env->FindClass("com/example/japaneselearningapp/JniBridgeJava");
     g_JniBridgeJavaClass = reinterpret_cast<jclass>(env->NewGlobalRef(clazz));
     g_GetAssetsMethodId = env->GetStaticMethodID(g_JniBridgeJavaClass, "GetAssetList", "(Ljava/lang/String;)[Ljava/lang/String;");
     g_LoadFileMethodId = env->GetStaticMethodID(g_JniBridgeJavaClass, "LoadFile", "(Ljava/lang/String;)[B");
