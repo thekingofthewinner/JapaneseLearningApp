@@ -35,6 +35,8 @@ class Live2DActivity : Activity() {
                 true
             }
 
+            JniBridgeJava.setContext(this)
+            Log.d(TAG, "setContext 成功")
             JniBridgeJava.setActivityInstance(this)
             Log.d(TAG, "setActivityInstance 成功")
             
