@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
-# 设置应用名称，这个变量会被 Common/CMakeLists.txt 使用
+project("live2d_sample")
+
 set(APP_NAME native-lib)
 
 # 设置路径变量
