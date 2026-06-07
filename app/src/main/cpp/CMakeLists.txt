@@ -5,7 +5,7 @@ project("live2d_sample")
 set(APP_NAME native-lib)
 
 # 设置路径变量
-set(SDK_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../CubismSdk)
+set(SDK_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../../../CubismSdk)
 set(CORE_PATH ${SDK_ROOT_PATH}/Core)
 set(FRAMEWORK_PATH ${SDK_ROOT_PATH}/Framework)
 set(COMMON_SRC_PATH ${SDK_ROOT_PATH}/Samples/Common)
