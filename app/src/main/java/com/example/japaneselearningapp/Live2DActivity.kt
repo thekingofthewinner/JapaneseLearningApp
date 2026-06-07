@@ -52,12 +52,15 @@ class Live2DActivity : Activity() {
 
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
+                Log.d(TAG, "触摸开始 ($x, $y)")
                 JniBridgeJava.nativeOnTouchesBegan(x, y)
             }
             MotionEvent.ACTION_UP -> {
+                Log.d(TAG, "触摸结束 ($x, $y)")
                 JniBridgeJava.nativeOnTouchesEnded(x, y)
             }
             MotionEvent.ACTION_MOVE -> {
+                Log.d(TAG, "触摸移动 ($x, $y)")
                 JniBridgeJava.nativeOnTouchesMoved(x, y)
             }
         }
@@ -65,27 +68,32 @@ class Live2DActivity : Activity() {
 
     override fun onStart() {
         super.onStart()
+        Log.d(TAG, "onStart")
         JniBridgeJava.nativeOnStart()
     }
 
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "onResume")
         glSurfaceView.onResume()
     }
 
     override fun onPause() {
         super.onPause()
+        Log.d(TAG, "onPause")
         glSurfaceView.onPause()
         JniBridgeJava.nativeOnPause()
     }
 
     override fun onStop() {
         super.onStop()
+        Log.d(TAG, "onStop")
         JniBridgeJava.nativeOnStop()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "onDestroy")
         JniBridgeJava.nativeOnDestroy()
     }
 }
