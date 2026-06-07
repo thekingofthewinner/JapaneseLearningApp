@@ -49,7 +49,16 @@ class MainActivity : ComponentActivity() {
                             startActivity(intent)
                         },
                         onFunctionClick = { function ->
-                            // 后续实现功能跳转
+                            when (function) {
+                                "conversion" -> {
+                                    // 会话练习 - 跳转到 Live2DActivity
+                                    val intent = Intent(this@MainActivity, Live2DActivity::class.java)
+                                    startActivity(intent)
+                                }
+                                else -> {
+                                    // 其他功能暂未实现
+                                }
+                            }
                         }
                     )
                 }

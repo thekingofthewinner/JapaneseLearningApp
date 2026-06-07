@@ -34,7 +34,8 @@ object JniBridgeJava {
         this.activityInstance = activity
     }
 
-    fun getAssetList(dirPath: String): Array<String> {
+    @JvmStatic
+    fun GetAssetList(dirPath: String): Array<String> {
         return try {
             context?.assets?.list(dirPath) ?: emptyArray()
         } catch (e: IOException) {
@@ -43,7 +44,8 @@ object JniBridgeJava {
         }
     }
 
-    fun loadFile(filePath: String): ByteArray? {
+    @JvmStatic
+    fun LoadFile(filePath: String): ByteArray? {
         var fileData: InputStream? = null
         return try {
             fileData = context?.assets?.open(filePath)
@@ -63,7 +65,8 @@ object JniBridgeJava {
         }
     }
 
-    fun moveTaskToBack() {
+    @JvmStatic
+    fun MoveTaskToBack() {
         activityInstance?.moveTaskToBack(true)
     }
 }
