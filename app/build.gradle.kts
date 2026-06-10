@@ -67,8 +67,8 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
-    // Sherpa-ONNX 安卓库（推荐 v1.13.2+）
-    implementation("com.k2-fsa:sherpa-onnx-android:1.13.2")
+    // Sherpa-ONNX 安卓库（通过 JitPack 获取）
+    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.1")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.compose.material:material-icons-extended")
     implementation(platform("androidx.compose:compose-bom:2024.09.00"))

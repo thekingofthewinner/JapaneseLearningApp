@@ -98,7 +98,7 @@ object TtsConfig {
             )
             
             // 创建 TTS 引擎
-            ttsEngine = OfflineTts(config)
+            ttsEngine = OfflineTts(assetManager = context.assets, config = config)
             
             isInitialized = true
             Log.d(TAG, "TTS 引擎初始化成功！")
