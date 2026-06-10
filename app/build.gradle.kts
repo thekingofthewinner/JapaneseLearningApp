@@ -69,6 +69,9 @@ dependencies {
     ksp("androidx.room:room-compiler:$roomVersion")
     // Sherpa-ONNX 安卓库（通过 JitPack 获取）
     implementation("com.github.k2-fsa:sherpa-onnx:v1.13.1")
+    // OkHttp 网络库（支持 HTTP 和 SSE 流式）
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.compose.material:material-icons-extended")
     implementation(platform("androidx.compose:compose-bom:2024.09.00"))
