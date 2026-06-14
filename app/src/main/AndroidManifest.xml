@@ -2,6 +2,50 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 麦克风权限（录音和语音识别） -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    
+    <!-- 网络权限（TTS 和 API 请求） -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- 网络状态权限（检查网络连接） -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- 震动反馈（通知和交互反馈） -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    
+    <!-- 防止屏幕休眠（语音对话时保持屏幕） -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- 后台服务（语音对话需要） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    
+    <!-- 存储权限（旧版 Android < 10） -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
+    
+    <!-- 媒体音频权限（Android 13+） -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    
+    <!-- 蓝牙权限（未来可能支持蓝牙耳机） -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    
+    <!-- 摄像头权限（未来可能加入拍照功能） -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- 悬浮窗权限（未来可能需要） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    
+    <!-- 允许应用在前台运行 -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    
+    <!-- 硬件功能声明 -->
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    
     <application
             android:name=".JapaneseLearningApplication"
             android:allowBackup="true"

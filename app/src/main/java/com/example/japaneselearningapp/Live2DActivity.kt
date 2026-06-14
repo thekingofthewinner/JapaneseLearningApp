@@ -164,6 +164,7 @@ class Live2DActivity : AppCompatActivity() {
     /**
      * 开始监听
      */
+    @SuppressLint("MissingPermission")
     private fun startListening() {
         if (isProcessing.get() || isSpeaking.get() || isMuted) {
             Log.d(TAG, "正在处理或播放中，暂不开始监听")
