@@ -1,6 +1,8 @@
 package com.example.japaneselearningapp
 
 import android.Manifest
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.pm.PackageManager
 import android.opengl.GLSurfaceView
 import android.os.Bundle
@@ -10,8 +12,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.japaneselearningapp.asr.AsrConfig
 import com.example.japaneselearningapp.asr.AudioRecorder
 import com.example.japaneselearningapp.network.MockApiService
@@ -22,58 +22,73 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class Live2DActivity : AppCompatActivity() {
     private val TAG = "Live2DActivity"
-    
-    private lateinit var chatRecyclerView: RecyclerView
-    private lateinit var messageAdapter: MessageAdapter
+
+    // UI 组件
     private lateinit var glSurfaceView: GLSurfaceView
+    private lateinit var micButton: FloatingActionButton
+    private lateinit var closeButton: FloatingActionButton
+    private lateinit var voiceStatusContainer: LinearLayout
+    private lateinit var dot1: View
+    private lateinit var dot2: View
+    private lateinit var dot3: View
     private lateinit var statusText: TextView
-    private lateinit var recordingIndicator: View
-    private lateinit var stopButton: FloatingActionButton
-    private lateinit var loadingIndicator: ProgressBar
-    
-    private val messages = mutableListOf<ChatMessage>()
+    private lateinit var muteHint: TextView
+
+    // 状态管理
+    private var isMuted = false
     private var isSpeaking = AtomicBoolean(false)
     private var isProcessing = AtomicBoolean(false)
-    
+    private var isListening = AtomicBoolean(false)
+
+    // 音频录制
     private lateinit var audioRecorder: AudioRecorder
-    
+
+    // 动画
+    private var dotsAnimation: AnimatorSet? = null
+
     companion object {
         private const val REQUEST_AUDIO_PERMISSION = 101
     }
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live2d)
-        
+
         initViews()
         checkPermissions()
     }
-    
+
     private fun initViews() {
-        chatRecyclerView = findViewById(R.id.chat_recycler_view)
         glSurfaceView = findViewById(R.id.live2d_view)
+        micButton = findViewById(R.id.mic_button)
+        closeButton = findViewById(R.id.close_button)
+        voiceStatusContainer = findViewById(R.id.voice_status_container)
+        dot1 = findViewById(R.id.dot1)
+        dot2 = findViewById(R.id.dot2)
+        dot3 = findViewById(R.id.dot3)
         statusText = findViewById(R.id.status_text)
-        recordingIndicator = findViewById(R.id.recording_indicator)
-        stopButton = findViewById(R.id.stop_button)
-        loadingIndicator = findViewById(R.id.loading_indicator)
-        
-        messageAdapter = MessageAdapter(messages)
-        chatRecyclerView.adapter = messageAdapter
-        chatRecyclerView.layoutManager = LinearLayoutManager(this).apply {
-            stackFromEnd = true
-        }
-        
+        muteHint = findViewById(R.id.mute_hint)
+
+        // 初始化 Live2D
         glSurfaceView.setEGLContextClientVersion(2)
         glSurfaceView.setRenderer(Live2DRenderer(this))
-        
+
         JniBridgeJava.setContext(this)
         JniBridgeJava.setActivityInstance(this)
-        
+
+        // 初始化音频录制器
         audioRecorder = AudioRecorder()
-        
-        stopButton.setOnClickListener { stopSpeaking() }
+
+        // 麦克风按钮点击事件
+        micButton.setOnClickListener { toggleMute() }
+
+        // 关闭按钮点击事件
+        closeButton.setOnClickListener { finish() }
+
+        // 语音状态容器点击事件（打断 AI 说话）
+        voiceStatusContainer.setOnClickListener { interruptAI() }
     }
-    
+
     private fun checkPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
@@ -86,7 +101,7 @@ class Live2DActivity : AppCompatActivity() {
             initializeEngines()
         }
     }
-    
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -102,7 +117,7 @@ class Live2DActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun initializeEngines() {
         // 初始化 TTS
         Log.d(TAG, "初始化 TTS 引擎...")
@@ -118,7 +133,7 @@ class Live2DActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun initializeAsr() {
         // 初始化 ASR
         Log.d(TAG, "初始化 ASR 引擎...")
@@ -126,8 +141,7 @@ class Live2DActivity : AppCompatActivity() {
             runOnUiThread {
                 if (success) {
                     Log.d(TAG, "ASR 引擎初始化成功")
-                    addWelcomeMessage()
-                    startListening()
+                    startConversation()
                 } else {
                     Log.e(TAG, "ASR 引擎初始化失败: $error")
                     Toast.makeText(this, "ASR 初始化失败: $error", Toast.LENGTH_SHORT).show()
@@ -135,43 +149,46 @@ class Live2DActivity : AppCompatActivity() {
             }
         }
     }
-    
-    private fun addWelcomeMessage() {
-        messages.add(ChatMessage(
-            text = "こんにちは！私はAIアシスタントの春です。何か話しかけてください。",
-            isUser = false,
-            language = "ja"
-        ))
-        messageAdapter.notifyItemInserted(messages.size - 1)
-        scrollToBottom()
-        
-        speakText("こんにちは！私はAIアシスタントの春です。何か話しかけてください。", "ja")
+
+    /**
+     * 开始对话
+     */
+    private fun startConversation() {
+        // 播放欢迎语
+        speakText("こんにちは！私はAIアシスタントの春です。何か話しかけてください。", "ja") {
+            // 欢迎语播放完成后，开始监听
+            startListening()
+        }
     }
-    
+
+    /**
+     * 开始监听
+     */
     private fun startListening() {
-        if (isProcessing.get() || isSpeaking.get()) {
+        if (isProcessing.get() || isSpeaking.get() || isMuted) {
             Log.d(TAG, "正在处理或播放中，暂不开始监听")
             return
         }
-        
-        setStatus("正在监听...")
-        recordingIndicator.visibility = View.VISIBLE
-        
+
+        isListening.set(true)
+        updateVoiceStatus(VoiceStatus.LISTENING)
+
         audioRecorder.startRecording(object : AudioRecorder.AudioCallback {
             override fun onAudioData(data: FloatArray) {
-                if (!isProcessing.get()) {
+                if (!isProcessing.get() && !isMuted) {
                     // 使用 VAD + ASR 进行语音识别
                     AsrConfig.startRecognitionWithVad(data, object : AsrConfig.RecognitionCallback {
                         override fun onPartialResult(text: String) {
                             runOnUiThread {
-                                setStatus("识别中: $text")
+                                updateVoiceStatus(VoiceStatus.SPEAKING_USER)
                             }
                         }
-                        
+
                         override fun onFinalResult(text: String, language: String) {
                             runOnUiThread {
-                                recordingIndicator.visibility = View.GONE
-                                
+                                isListening.set(false)
+                                updateVoiceStatus(VoiceStatus.PROCESSING)
+
                                 if (text.isNotEmpty()) {
                                     handleUserInput(text, language)
                                 } else {
@@ -179,91 +196,80 @@ class Live2DActivity : AppCompatActivity() {
                                 }
                             }
                         }
-                        
+
                         override fun onError(error: String) {
                             runOnUiThread {
                                 Log.e(TAG, "ASR 错误: $error")
-                                recordingIndicator.visibility = View.GONE
+                                isListening.set(false)
                                 startListening()
                             }
                         }
-                        
+
                         override fun onSpeechStart() {
                             runOnUiThread {
-                                setStatus("检测到语音...")
+                                updateVoiceStatus(VoiceStatus.SPEAKING_USER)
                             }
                         }
-                        
+
                         override fun onSpeechEnd() {
                             runOnUiThread {
-                                setStatus("处理中...")
+                                updateVoiceStatus(VoiceStatus.PROCESSING)
                             }
                         }
                     })
                 }
             }
-            
+
             override fun onError(error: String) {
                 runOnUiThread {
                     Log.e(TAG, "录音错误: $error")
                     Toast.makeText(this@Live2DActivity, "录音错误: $error", Toast.LENGTH_SHORT).show()
-                    recordingIndicator.visibility = View.GONE
+                    isListening.set(false)
                     startListening()
                 }
             }
         })
     }
-    
+
+    /**
+     * 处理用户输入
+     */
     private fun handleUserInput(text: String, language: String) {
         if (text.trim().isEmpty()) {
             startListening()
             return
         }
-        
+
         isProcessing.set(true)
-        
-        // 添加用户消息
-        messages.add(ChatMessage(text = text, isUser = true, language = language))
-        messageAdapter.notifyItemInserted(messages.size - 1)
-        scrollToBottom()
-        
-        setStatus("思考中...")
-        loadingIndicator.visibility = View.VISIBLE
-        
+
         // 发送到 API（使用 Mock 数据）
         MockApiService.getMockResponse(text) { responseText, responseLanguage ->
             runOnUiThread {
-                loadingIndicator.visibility = View.GONE
-                
-                // 添加机器人回复
-                messages.add(ChatMessage(
-                    text = responseText,
-                    isUser = false,
-                    language = responseLanguage
-                ))
-                messageAdapter.notifyItemInserted(messages.size - 1)
-                scrollToBottom()
-                
                 // 播放语音
-                speakText(responseText, responseLanguage)
+                speakText(responseText, responseLanguage) {
+                    isProcessing.set(false)
+                    startListening()
+                }
             }
         }
     }
-    
-    private fun speakText(text: String, language: String) {
+
+    /**
+     * 播放语音
+     */
+    private fun speakText(text: String, language: String, onComplete: () -> Unit = {}) {
         if (!TtsConfig.isInitialized()) {
             Toast.makeText(this, "TTS 引擎尚未初始化", Toast.LENGTH_SHORT).show()
             isProcessing.set(false)
             startListening()
             return
         }
-        
+
         stopSpeaking()
-        
+
         isSpeaking.set(true)
-        stopButton.show()
-        setStatus("播放中...")
-        
+        updateVoiceStatus(VoiceStatus.SPEAKING_AI)
+
         TtsConfig.speak(
             text = text,
             language = language,
@@ -272,73 +278,180 @@ class Live2DActivity : AppCompatActivity() {
         ) { success, error ->
             isSpeaking.set(false)
             runOnUiThread {
-                stopButton.hide()
                 if (!success) {
                     Log.e(TAG, "TTS 播放失败: $error")
                     Toast.makeText(this, "播放失败: $error", Toast.LENGTH_SHORT).show()
                 }
-                
-                isProcessing.set(false)
-                startListening()
+                onComplete()
             }
         }
     }
-    
+
+    /**
+     * 停止播放
+     */
     private fun stopSpeaking() {
         if (isSpeaking.get()) {
             TtsConfig.stop()
             isSpeaking.set(false)
-            stopButton.hide()
         }
     }
-    
-    private fun setStatus(status: String) {
-        statusText.text = status
+
+    /**
+     * 打断 AI 说话
+     */
+    private fun interruptAI() {
+        if (isSpeaking.get()) {
+            stopSpeaking()
+            isProcessing.set(false)
+            startListening()
+        }
     }
-    
-    private fun scrollToBottom() {
-        chatRecyclerView.postDelayed({
-            chatRecyclerView.scrollToPosition(messageAdapter.itemCount - 1)
-        }, 100)
+
+    /**
+     * 切换静音状态
+     */
+    private fun toggleMute() {
+        isMuted = !isMuted
+
+        if (isMuted) {
+            // 静音状态
+            micButton.setImageResource(R.drawable.ic_mic_off)
+            micButton.backgroundTintList = ContextCompat.getColorStateList(this, R.color.red)
+            muteHint.visibility = View.VISIBLE
+            stopListening()
+            updateVoiceStatus(VoiceStatus.MUTED)
+        } else {
+            // 取消静音
+            micButton.setImageResource(R.drawable.ic_mic)
+            micButton.backgroundTintList = ContextCompat.getColorStateList(this, R.color.green)
+            muteHint.visibility = View.GONE
+            startListening()
+        }
     }
-    
+
+    /**
+     * 停止监听
+     */
+    private fun stopListening() {
+        isListening.set(false)
+        audioRecorder.stopRecording()
+    }
+
+    /**
+     * 更新语音状态显示
+     */
+    private fun updateVoiceStatus(status: VoiceStatus) {
+        stopDotsAnimation()
+
+        when (status) {
+            VoiceStatus.LISTENING -> {
+                // 三个白色圆点 + "正在听"
+                setDotsAppearance(isWhite = true, isSquare = false)
+                statusText.text = "正在听"
+            }
+            VoiceStatus.SPEAKING_USER -> {
+                // 三个拉长的白色圆点 + "正在听"
+                setDotsAppearance(isWhite = true, isSquare = false)
+                statusText.text = "正在听"
+                startDotsAnimation()
+            }
+            VoiceStatus.SPEAKING_AI -> {
+                // 三个灰色方形 + "点击或者说话打断"
+                setDotsAppearance(isWhite = false, isSquare = true)
+                statusText.text = "点击或者说话打断"
+            }
+            VoiceStatus.PROCESSING -> {
+                // 三个白色圆点 + "处理中"
+                setDotsAppearance(isWhite = true, isSquare = false)
+                statusText.text = "处理中"
+            }
+            VoiceStatus.MUTED -> {
+                // 三个灰色圆点 + "已静音"
+                setDotsAppearance(isWhite = false, isSquare = false)
+                statusText.text = "已静音"
+            }
+        }
+    }
+
+    /**
+     * 设置圆点外观
+     */
+    private fun setDotsAppearance(isWhite: Boolean, isSquare: Boolean) {
+        val drawableRes = when {
+            isSquare -> R.drawable.gray_square
+            isWhite -> R.drawable.white_dot
+            else -> R.drawable.gray_dot
+        }
+
+        dot1.setBackgroundResource(drawableRes)
+        dot2.setBackgroundResource(drawableRes)
+        dot3.setBackgroundResource(drawableRes)
+
+        // 重置缩放
+        dot1.scaleY = 1f
+        dot2.scaleY = 1f
+        dot3.scaleY = 1f
+    }
+
+    /**
+     * 开始圆点动画
+     */
+    private fun startDotsAnimation() {
+        stopDotsAnimation()
+
+        val anim1 = ObjectAnimator.ofFloat(dot1, "scaleY", 1f, 2f).apply {
+            duration = 300
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        val anim2 = ObjectAnimator.ofFloat(dot2, "scaleY", 1f, 2f).apply {
+            duration = 300
+            startDelay = 100
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        val anim3 = ObjectAnimator.ofFloat(dot3, "scaleY", 1f, 2f).apply {
+            duration = 300
+            startDelay = 200
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        dotsAnimation = AnimatorSet().apply {
+            playTogether(anim1, anim2, anim3)
+            start()
+        }
+    }
+
+    /**
+     * 停止圆点动画
+     */
+    private fun stopDotsAnimation() {
+        dotsAnimation?.cancel()
+        dotsAnimation = null
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        audioRecorder.stopRecording()
+        stopListening()
         stopSpeaking()
+        stopDotsAnimation()
         TtsConfig.release()
         AsrConfig.release()
         MockApiService.shutdown()
     }
-    
-    data class ChatMessage(
-        var text: String,
-        val isUser: Boolean,
-        val language: String
-    )
-    
-    class MessageAdapter(private val messages: List<ChatMessage>) :
-        RecyclerView.Adapter<MessageAdapter.MessageViewHolder>() {
-        
-        override fun getItemViewType(position: Int): Int {
-            return if (messages[position].isUser) 1 else 0
-        }
-        
-        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): MessageViewHolder {
-            val layoutId = if (viewType == 1) R.layout.item_message_user else R.layout.item_message_bot
-            val view = android.view.LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
-            return MessageViewHolder(view)
-        }
-        
-        override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
-            val message = messages[position]
-            holder.messageText.text = message.text
-        }
-        
-        override fun getItemCount(): Int = messages.size
-        
-        class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val messageText: TextView = itemView.findViewById(R.id.message_text)
-        }
+
+    /**
+     * 语音状态枚举
+     */
+    enum class VoiceStatus {
+        LISTENING,        // 正在听
+        SPEAKING_USER,    // 用户正在说话
+        SPEAKING_AI,      // AI 正在说话
+        PROCESSING,       // 处理中
+        MUTED             // 已静音
     }
 }
