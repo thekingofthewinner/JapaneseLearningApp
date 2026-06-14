@@ -25,6 +25,8 @@ object AsrConfig {
         fun onPartialResult(text: String)
         fun onFinalResult(text: String, language: String)
         fun onError(error: String)
+        fun onSpeechStart() {}
+        fun onSpeechEnd() {}
     }
     
     /**
@@ -275,13 +277,45 @@ object AsrConfig {
     
     /**
      * 识别音频片段（带 VAD）
+     * 这是 recognizeWithVad 的别名，用于兼容 Live2DActivity 的调用
+     */
+    fun startRecognitionWithVad(
+        samples: FloatArray,
+        callback: RecognitionCallback
+    ) {
+        recognizeWithVad(samples, callback)
+    }
+    
+    /**
+     * 识别音频片段（带 VAD）
      */
     fun recognizeWithVad(
         samples: FloatArray,
         callback: RecognitionCallback
     ) {
         // 由于 VAD 实现较复杂，暂时使用简单的能量检测
-        recognizeAudio(samples, callback = callback)
+        // TODO: 后续可以添加真正的 VAD 支持
+        recognizeAudio(samples, callback = object : RecognitionCallback {
+            override fun onPartialResult(text: String) {
+                callback.onPartialResult(text)
+            }
+
+            override fun onFinalResult(text: String, language: String) {
+                callback.onFinalResult(text, language)
+            }
+
+            override fun onError(error: String) {
+                callback.onError(error)
+            }
+
+            override fun onSpeechStart() {
+                callback.onSpeechStart()
+            }
+
+            override fun onSpeechEnd() {
+                callback.onSpeechEnd()
+            }
+        })
     }
     
     /**
