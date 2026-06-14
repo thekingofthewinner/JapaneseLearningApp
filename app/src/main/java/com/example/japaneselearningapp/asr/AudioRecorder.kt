@@ -86,6 +86,10 @@ class AudioRecorder(
             
             return true
             
+        } catch (e: SecurityException) {
+            Log.e(TAG, "缺少麦克风权限", e)
+            callback.onError("缺少麦克风权限")
+            return false
         } catch (e: Exception) {
             Log.e(TAG, "启动录音失败", e)
             callback.onError("启动录音失败: ${e.message}")

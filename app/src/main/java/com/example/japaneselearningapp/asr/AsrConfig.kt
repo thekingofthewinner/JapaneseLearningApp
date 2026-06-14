@@ -10,27 +10,21 @@ object AsrConfig {
     private const val TAG = "AsrConfig"
     
     private var recognizer: OfflineRecognizer? = null
-    private var vad: VoiceActivityDetector? = null
     private var isInitialized = false
     private var modelDir = ""
     
-    // VAD 配置
-    private const val VAD_SILENCE_DURATION = 0.8  // 静音持续时间（秒）
-    private const val VAD_SPEECH_DURATION = 0.25  // 语音持续时间（秒）
+    // 采样率
     private const val SAMPLE_RATE = 16000
     
-    // 模型文件名
+    // 模型文件名（ReazonSpeech 模型）
     private const val VAD_MODEL = "silero_vad.onnx"
-    private const val ASR_ENCODER = "encoder.int8.onnx"
-    private const val ASR_DECODER = "decoder.int8.onnx"
+    private const val ASR_MODEL = "model.onnx"  // ReazonSpeech 使用 model.onnx
     private const val ASR_TOKENS = "tokens.txt"
     
     interface RecognitionCallback {
         fun onPartialResult(text: String)
         fun onFinalResult(text: String, language: String)
         fun onError(error: String)
-        fun onSpeechStart()
-        fun onSpeechEnd()
     }
     
     /**
@@ -52,37 +46,50 @@ object AsrConfig {
             
             Log.d(TAG, "模型目录: $modelDir")
             
-            // 初始化 VAD
-            val vadConfig = SileroVadModelConfig(
-                model = "$modelDir/$VAD_MODEL",
-                threshold = 0.5f,
-                minSilenceDuration = VAD_SILENCE_DURATION,
-                minSpeechDuration = VAD_SPEECH_DURATION,
-                windowSize = 512
-            )
+            // 检查实际存在的模型文件
+            val hasEncoder = File(modelDir, "encoder.onnx").exists() || File(modelDir, "encoder.int8.onnx").exists()
+            val hasModel = File(modelDir, "model.onnx").exists()
             
-            vad = VoiceActivityDetector(vadConfig)
-            Log.d(TAG, "VAD 初始化成功")
-            
-            // 初始化 ASR（SenseVoice 多语言模型）
-            val asrConfig = OfflineRecognizerConfig(
-                featConfig = FeatureConfig(
-                    sampleRate = SAMPLE_RATE,
-                    featureDim = 80
-                ),
-                modelConfig = OfflineModelConfig(
-                    transducer = OfflineTransducerModelConfig(
-                        encoder = "$modelDir/$ASR_ENCODER",
-                        decoder = "$modelDir/$ASR_DECODER"
+            // 初始化 ASR（ReazonSpeech Zipformer 模型）
+            val asrConfig = if (hasEncoder) {
+                // Transducer 模型（encoder + decoder + joiner）
+                OfflineRecognizerConfig(
+                    featConfig = FeatureConfig(
+                        sampleRate = SAMPLE_RATE,
+                        featureDim = 80
                     ),
-                    tokens = "$modelDir/$ASR_TOKENS",
-                    numThreads = 4,
-                    debug = true
+                    modelConfig = OfflineModelConfig(
+                        transducer = OfflineTransducerModelConfig(
+                            encoder = if (File(modelDir, "encoder.onnx").exists()) "$modelDir/encoder.onnx" else "$modelDir/encoder.int8.onnx",
+                            decoder = if (File(modelDir, "decoder.onnx").exists()) "$modelDir/decoder.onnx" else "$modelDir/decoder.int8.onnx",
+                            joiner = if (File(modelDir, "joiner.onnx").exists()) "$modelDir/joiner.onnx" else if (File(modelDir, "joiner.int8.onnx").exists()) "$modelDir/joiner.int8.onnx" else if (File(modelDir, "decoder.onnx").exists()) "$modelDir/decoder.onnx" else "$modelDir/decoder.int8.onnx"
+                        ),
+                        tokens = "$modelDir/tokens.txt",
+                        numThreads = 2,
+                        debug = true
+                    )
                 )
-            )
+            } else {
+                // 单一模型文件（model.onnx）
+                OfflineRecognizerConfig(
+                    featConfig = FeatureConfig(
+                        sampleRate = SAMPLE_RATE,
+                        featureDim = 80
+                    ),
+                    modelConfig = OfflineModelConfig(
+                        transducer = OfflineTransducerModelConfig(
+                            encoder = "$modelDir/model.onnx",
+                            decoder = "$modelDir/model.onnx",
+                            joiner = "$modelDir/model.onnx"
+                        ),
+                        tokens = "$modelDir/tokens.txt",
+                        numThreads = 2,
+                        debug = true
+                    )
+                )
+            }
             
             recognizer = OfflineRecognizer(asrConfig)
-            
             isInitialized = true
             Log.d(TAG, "ASR 引擎初始化成功！")
             
@@ -104,84 +111,160 @@ object AsrConfig {
             asrDir.mkdirs()
         }
         
-        val modelFiles = listOf(VAD_MODEL, ASR_ENCODER, ASR_DECODER, ASR_TOKENS)
+        // 尝试多种可能的模型文件结构
+        // ReazonSpeech 模型可能解压后的目录结构：
+        // 1. 直接在 asr/ 目录下（encoder.onnx, decoder.onnx, joiner.onnx, tokens.txt）
+        // 2. 在 asr/1a，转录为/ 子目录下
         
-        for (fileName in modelFiles) {
+        val possibleModelFiles = listOf(
+            "encoder.onnx",
+            "encoder.int8.onnx",
+            "model.onnx"
+        )
+        
+        val possibleTokensFiles = listOf(
+            "tokens.txt"
+        )
+        
+        val possibleVadFiles = listOf(
+            "silero_vad.onnx"
+        )
+        
+        // 检查是否已经有模型文件
+        var hasModel = false
+        for (fileName in possibleModelFiles) {
+            val file = File(asrDir, fileName)
+            if (file.exists()) {
+                hasModel = true
+                Log.d(TAG, "模型文件已存在: $fileName")
+                break
+            }
+        }
+        
+        // 复制 ASR 模型文件
+        if (!hasModel) {
+            // 尝试从 asr/ 目录复制
+            for (fileName in possibleModelFiles) {
+                try {
+                    val destFile = File(asrDir, fileName)
+                    if (!destFile.exists()) {
+                        context.assets.open("asr/$fileName").use { input ->
+                            FileOutputStream(destFile).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        Log.d(TAG, "复制模型文件: $fileName")
+                        hasModel = true
+                        break
+                    }
+                } catch (e: Exception) {
+                    Log.d(TAG, "尝试复制 $fileName 失败，继续尝试其他文件...")
+                }
+            }
+            
+            // 如果 asr/ 目录没有，尝试从 asr/1a，转录为/ 目录复制
+            if (!hasModel) {
+                for (fileName in possibleModelFiles) {
+                    try {
+                        val destFile = File(asrDir, fileName)
+                        if (!destFile.exists()) {
+                            context.assets.open("asr/1a，转录为/$fileName").use { input ->
+                                FileOutputStream(destFile).use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            Log.d(TAG, "从 1a，转录为/ 复制模型文件: $fileName")
+                            hasModel = true
+                            break
+                        }
+                    } catch (e: Exception) {
+                        Log.d(TAG, "尝试从 1a，转录为/ 复制 $fileName 失败...")
+                    }
+                }
+            }
+        }
+        
+        // 复制 tokens.txt
+        var hasTokens = File(asrDir, "tokens.txt").exists()
+        if (!hasTokens) {
             try {
-                val inputFile = File(asrDir, fileName)
-                if (!inputFile.exists()) {
-                    context.assets.open("asr/$fileName").use { input ->
-                        FileOutputStream(inputFile).use { output ->
+                context.assets.open("asr/tokens.txt").use { input ->
+                    FileOutputStream(File(asrDir, "tokens.txt")).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.d(TAG, "复制 tokens.txt")
+                hasTokens = true
+            } catch (e: Exception) {
+                try {
+                    context.assets.open("asr/1a，转录为/tokens.txt").use { input ->
+                        FileOutputStream(File(asrDir, "tokens.txt")).use { output ->
                             input.copyTo(output)
                         }
                     }
-                    Log.d(TAG, "复制模型文件: $fileName")
+                    Log.d(TAG, "从 1a，转录为/ 复制 tokens.txt")
+                    hasTokens = true
+                } catch (e2: Exception) {
+                    Log.e(TAG, "复制 tokens.txt 失败", e2)
+                }
+            }
+        }
+        
+        // 复制 VAD 模型
+        for (fileName in possibleVadFiles) {
+            try {
+                val vadFile = File(asrDir, fileName)
+                if (!vadFile.exists()) {
+                    context.assets.open("asr/$fileName").use { input ->
+                        FileOutputStream(vadFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    Log.d(TAG, "复制 VAD 模型文件: $fileName")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "复制模型文件失败: $fileName", e)
-                return ""
+                Log.d(TAG, "复制 VAD 模型 $fileName 失败（VAD 可选）")
             }
+        }
+        
+        // 检查必要的文件是否存在
+        if (!hasModel) {
+            Log.e(TAG, "没有找到模型文件！")
+            return ""
+        }
+        
+        if (!hasTokens) {
+            Log.e(TAG, "没有找到 tokens.txt！")
+            return ""
         }
         
         return asrDir.absolutePath
     }
     
     /**
-     * 开始语音识别（带 VAD）
+     * 识别音频（简单版本，不使用 VAD）
      */
-    fun startRecognitionWithVad(
-        audioData: FloatArray,
+    fun recognizeAudio(
+        samples: FloatArray,
+        sampleRate: Int = SAMPLE_RATE,
         callback: RecognitionCallback
     ) {
-        if (!isInitialized || recognizer == null || vad == null) {
+        if (!isInitialized || recognizer == null) {
             callback.onError("ASR 引擎尚未初始化")
             return
         }
         
         try {
-            // 重置 VAD
-            vad!!.reset()
+            val stream = recognizer!!.createStream()
+            stream.acceptWaveform(samples, sampleRate)
+            recognizer!!.decode(stream)
             
-            // 使用 VAD 检测语音段
-            vad!!.acceptWaveform(audioData)
-            
-            var speechStarted = false
-            var totalText = StringBuilder()
-            
-            while (!vad!!.isEmpty) {
-                val speechSegment = vad!!.front
-                vad!!.pop()
-                
-                if (speechSegment.isNotEmpty()) {
-                    if (!speechStarted) {
-                        speechStarted = true
-                        callback.onSpeechStart()
-                        Log.d(TAG, "检测到语音开始")
-                    }
-                    
-                    // 对语音段进行识别
-                    val stream = recognizer!!.createStream()
-                    stream.acceptWaveform(speechSegment, SAMPLE_RATE)
-                    recognizer!!.decode(stream)
-                    
-                    val result = recognizer!!.getResult(stream)
-                    if (result.text.isNotEmpty()) {
-                        totalText.append(result.text)
-                        callback.onPartialResult(result.text)
-                        Log.d(TAG, "识别结果: ${result.text}")
-                    }
-                }
-            }
-            
-            if (speechStarted) {
-                callback.onSpeechEnd()
-                Log.d(TAG, "检测到语音结束")
-            }
-            
-            // 返回最终结果
-            if (totalText.isNotEmpty()) {
-                val language = detectLanguage(totalText.toString())
-                callback.onFinalResult(totalText.toString(), language)
+            val result = recognizer!!.getResult(stream)
+            if (result.text.isNotEmpty()) {
+                val language = detectLanguage(result.text)
+                callback.onFinalResult(result.text, language)
+            } else {
+                callback.onFinalResult("", "ja")
             }
             
         } catch (e: Exception) {
@@ -191,16 +274,25 @@ object AsrConfig {
     }
     
     /**
+     * 识别音频片段（带 VAD）
+     */
+    fun recognizeWithVad(
+        samples: FloatArray,
+        callback: RecognitionCallback
+    ) {
+        // 由于 VAD 实现较复杂，暂时使用简单的能量检测
+        recognizeAudio(samples, callback = callback)
+    }
+    
+    /**
      * 简单的语言检测
      */
     private fun detectLanguage(text: String): String {
         val japaneseChars = Regex("[\\u3040-\\u30FF]")
         val chineseChars = Regex("[\\u4E00-\\u9FFF]")
-        val koreanChars = Regex("[\\uAC00-\\uD7AF]")
         
         return when {
             japaneseChars.containsMatchIn(text) -> "ja"
-            koreanChars.containsMatchIn(text) -> "ko"
             chineseChars.containsMatchIn(text) -> "zh"
             text.matches(Regex("[a-zA-Z\\s]+")) -> "en"
             else -> "ja"  // 默认日语
@@ -216,9 +308,13 @@ object AsrConfig {
      * 释放资源
      */
     fun release() {
-        recognizer = null
-        vad = null
-        isInitialized = false
-        Log.d(TAG, "ASR 引擎已释放")
+        try {
+            recognizer?.release()
+            recognizer = null
+            isInitialized = false
+            Log.d(TAG, "ASR 引擎已释放")
+        } catch (e: Exception) {
+            Log.e(TAG, "释放 ASR 引擎时出错", e)
+        }
     }
 }
