@@ -60,6 +60,7 @@ object TtsConfig {
     
     private var ttsEngine: OfflineTts? = null
     private var isInitialized = false
+    private var isPlaying = false
     private var modelDir: String = ""
     
     /**
@@ -297,7 +298,21 @@ object TtsConfig {
     }
     
     /**
+     * 停止播放
+     */
+    fun stop() {
+        try {
+            // sherpa-onnx 的 OfflineTts 不支持直接停止，
+            // 但我们可以标记停止状态
+            isPlaying = false
+            Log.d(TAG, "停止播放标记已设置")
+        } catch (e: Exception) {
+            Log.e(TAG, "停止播放时出错", e)
+        }
+    }
+    
+    /**
      * 检查是否已初始化
      */
-    fun isReady(): Boolean = isInitialized
+    fun isInitialized(): Boolean = isInitialized
 }

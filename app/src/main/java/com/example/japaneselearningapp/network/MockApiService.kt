@@ -40,18 +40,14 @@ object MockApiService {
     
     data class MockResponse(val text: String, val language: String)
     
-    interface MockCallback {
-        fun onResponse(text: String, language: String)
-        fun onError(error: String)
-    }
-    
+    // 流式回调接口（保留，因为不能简化为 lambda）
     interface MockStreamingCallback {
         fun onChunk(chunk: String, language: String)
         fun onComplete()
         fun onError(error: String)
     }
     
-    fun getMockResponse(prompt: String, callback: MockCallback) {
+    fun getMockResponse(prompt: String, callback: (String, String) -> Unit) {
         executor.execute {
             try {
                 Thread.sleep(1500)
@@ -66,12 +62,11 @@ object MockApiService {
                 
                 val randomResponse = responses?.random() ?: mockResponses["default"]?.first()
                 randomResponse?.let {
-                    callback.onResponse(it.text, it.language)
-                } ?: callback.onError("没有找到合适的响应")
+                    callback(it.text, it.language)
+                }
                 
             } catch (e: InterruptedException) {
                 Log.e(TAG, "Mock 请求被中断: ${e.message}")
-                callback.onError("请求被中断")
             }
         }
     }
