@@ -3,6 +3,7 @@ package com.example.japaneselearningapp.network
 import android.util.Log
 import com.google.gson.Gson
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
@@ -38,7 +39,7 @@ object ApiService {
     
     fun sendChatRequest(prompt: String, callback: ChatCallback) {
         val requestBody = RequestBody.create(
-            MediaType.parse("application/json"),
+            "application/json".toMediaTypeOrNull(),
             gson.toJson(mapOf("prompt" to prompt))
         )
         
@@ -55,11 +56,11 @@ object ApiService {
             
             override fun onResponse(call: Call, response: Response) {
                 if (!response.isSuccessful) {
-                    callback.onError("HTTP 错误: ${response.code()}")
+                    callback.onError("HTTP 错误: ${response.code}")
                     return
                 }
-                
-                response.body()?.let { body ->
+
+                response.body?.let { body ->
                     try {
                         val json = body.string()
                         val chatResponse = gson.fromJson(json, ChatResponse::class.java)
@@ -74,7 +75,7 @@ object ApiService {
     
     fun sendStreamingChatRequest(prompt: String, callback: StreamingCallback): EventSource? {
         val requestBody = RequestBody.create(
-            MediaType.parse("application/json"),
+            "application/json".toMediaTypeOrNull(),
             gson.toJson(mapOf("prompt" to prompt))
         )
         

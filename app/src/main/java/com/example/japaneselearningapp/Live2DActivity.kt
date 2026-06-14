@@ -2,6 +2,7 @@ package com.example.japaneselearningapp
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -121,7 +122,7 @@ class Live2DActivity : AppCompatActivity() {
     private fun initializeAsr() {
         // 初始化 ASR
         Log.d(TAG, "初始化 ASR 引擎...")
-        AsrConfig.initialize(this) { success, error ->
+        AsrConfig.initialize(this,) { success, error ->
             runOnUiThread {
                 if (success) {
                     Log.d(TAG, "ASR 引擎初始化成功")

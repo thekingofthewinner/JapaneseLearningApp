@@ -36,7 +36,11 @@ object AsrConfig {
     /**
      * 初始化 ASR 引擎
      */
-    fun initialize(context: Context, onComplete: (Boolean, String?) -> Unit) {
+    fun initialize(
+        context: Context,
+        onComplete: (Boolean, String?) -> Unit,
+        VoiceActivityDetector: (SileroVadModelConfig) -> Unit
+    ) {
         try {
             Log.d(TAG, "开始初始化 ASR 引擎...")
             
