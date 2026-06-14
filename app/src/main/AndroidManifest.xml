@@ -79,7 +79,8 @@
                 android:name=".Live2DActivity"
                 android:exported="false"
                 android:label="会话练习"
-                android:theme="@style/Theme.JapaneseLearningApp"/>
+                android:theme="@style/Theme.JapaneseLearningApp"
+                android:screenOrientation="portrait" />
     </application>
 
 </manifest>
