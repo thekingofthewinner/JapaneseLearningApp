@@ -119,15 +119,5 @@ object TtsExample {
         TtsConfig.release()
         Log.d(TAG, "TTS 资源已释放")
     }
-    
-    /**
-     * 示例 8：检查 TTS 状态
-     */
-    fun checkStatusExample() {
-        if (TtsConfig.isReady()) {
-            Log.d(TAG, "TTS 引擎已就绪")
-        } else {
-            Log.d(TAG, "TTS 引擎未初始化")
-        }
-    }
+
 }

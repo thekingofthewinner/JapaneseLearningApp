@@ -91,7 +91,7 @@ object AsrConfig {
                 )
             }
             
-            recognizer = OfflineRecognizer(asrConfig)
+            recognizer = OfflineRecognizer(context.assets,asrConfig)
             isInitialized = true
             Log.d(TAG, "ASR 引擎初始化成功！")
             
