@@ -437,11 +437,33 @@ class Live2DActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "onDestroy: 释放资源")
+        
+        // 停止所有操作
         stopListening()
         stopSpeaking()
+        
+        // 停止动画
         stopDotsAnimation()
-        TtsConfig.release()
+        
+        // 释放 GLSurfaceView（关键修复）
+        glSurfaceView.onPause()
+        try {
+            glSurfaceView.setRenderer(null)
+        } catch (e: Exception) {
+            Log.w(TAG, "设置 renderer 为 null 失败", e)
+        }
+        
+        // 释放 JNI 资源（关键修复）
+        try {
+            JniBridgeJava.nativeOnDestroy()
+        } catch (e: Exception) {
+            Log.w(TAG, "释放 JNI 资源失败", e)
+        }
+        
+        // 释放 ASR 和 TTS 引擎
         AsrConfig.release()
+        TtsConfig.release()
         MockApiService.shutdown()
     }
 
