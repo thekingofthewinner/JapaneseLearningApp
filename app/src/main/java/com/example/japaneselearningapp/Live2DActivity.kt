@@ -77,6 +77,25 @@ class Live2DActivity : AppCompatActivity() {
         JniBridgeJava.setContext(this)
         JniBridgeJava.setActivityInstance(this)
 
+        // 设置触摸监听器，将触摸事件传递给 Native 层
+        glSurfaceView.setOnTouchListener { v, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    JniBridgeJava.nativeOnTouchesBegan(event.x, event.y)
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    JniBridgeJava.nativeOnTouchesMoved(event.x, event.y)
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    JniBridgeJava.nativeOnTouchesEnded(event.x, event.y)
+                    true
+                }
+                else -> false
+            }
+        }
+
         // 初始化音频录制器
         audioRecorder = AudioRecorder()
 

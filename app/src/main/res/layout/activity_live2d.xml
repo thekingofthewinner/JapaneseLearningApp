@@ -17,6 +17,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:orientation="vertical"
+        android:layout_marginBottom="50dp"
         android:padding="24dp">
 
         <!-- 语音状态显示区 -->

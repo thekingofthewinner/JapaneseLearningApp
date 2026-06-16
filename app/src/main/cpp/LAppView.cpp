@@ -170,8 +170,9 @@ void LAppView::Render()
     _power->SetWindowSize(maxWidth, maxHeight);
 
     _back->Render();
-    _gear->Render();
-    _power->Render();
+    // 禁用 Native 层渲染的齿轮和关闭按钮（使用 Java 层的按钮）
+    // _gear->Render();
+    // _power->Render();
 
     if(_changeModel)
     {
@@ -241,17 +242,18 @@ void LAppView::OnTouchesEnded(float pointX, float pointY)
         }
         live2DManager->OnTap(x, y);
 
+        // 禁用 Native 层按钮的点击检测（使用 Java 层的按钮）
         // 歯車にタップしたか
-        if (_gear->IsHit(pointX, pointY))
-        {
-            _changeModel = true;
-        }
+        // if (_gear->IsHit(pointX, pointY))
+        // {
+        //     _changeModel = true;
+        // }
 
         // 電源ボタンにタップしたか
-        if (_power->IsHit(pointX, pointY))
-        {
-            LAppDelegate::GetInstance()->DeActivateApp();
-        }
+        // if (_power->IsHit(pointX, pointY))
+        // {
+        //     LAppDelegate::GetInstance()->DeActivateApp();
+        // }
     }
 }
 
