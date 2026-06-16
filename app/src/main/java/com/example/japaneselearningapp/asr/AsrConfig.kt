@@ -90,10 +90,7 @@ object AsrConfig {
                     )
                 )
             }
-            
-            // 创建 ASR 识别器
-            // 注意：模型文件已经复制到内部存储，所以不使用 assetManager
-            recognizer = OfflineRecognizer(asrConfig)
+            recognizer = OfflineRecognizer(context.assets,asrConfig)
             isInitialized = true
             Log.d(TAG, "ASR 引擎初始化成功！")
             
