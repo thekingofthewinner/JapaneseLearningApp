@@ -139,34 +139,21 @@ object TtsConfig {
             onComplete(false, "TTS 引擎未初始化")
             return
         }
-        
+
         Thread {
             try {
-                Log.d(TAG, "生成语音: $text (语言: $language, 风格: $voiceStyle, 语速: $speed)")
+                Log.d(TAG, "生成语音: text='$text', 风格: $voiceStyle, 语速: $speed")
 
-                // 构建生成配置
-                val genConfig = GenerationConfig(
-                    sid = voiceStyle,
-                    speed = speed,
-                    numSteps = 8,
-                    extra = mapOf("lang" to language)
-                )
+                // Supertonic 模型使用简单的 generate 方法
+                // 风格由 voice.bin 文件决定，GenerationConfig 不需要额外参数
+                Log.d(TAG, "开始调用 ttsEngine?.generate...")
 
-                Log.d(TAG, "开始调用 generateWithConfigAndCallback...")
+                val audio = ttsEngine?.generate(text)
 
-                // 生成语音
-                val audio = ttsEngine?.generateWithConfigAndCallback(
-                    text = text,
-                    config = genConfig,
-                    callback = { samples ->
-                        // 回调函数，可以在这里处理实时音频流
-                        // 1 = 继续生成，0 = 停止生成
-                        Log.d(TAG, "生成中: ${samples.size} 采样点")
-                        1
-                    }
-                )
-
-                Log.d(TAG, "generateWithConfigAndCallback 返回: audio=$audio")
+                Log.d(TAG, "generate 返回: audio=$audio")
+                if (audio != null) {
+                    Log.d(TAG, "samples.size=${audio.samples.size}, sampleRate=${audio.sampleRate}")
+                }
 
                 if (audio != null && audio.samples.isNotEmpty()) {
                     Log.d(TAG, "语音生成成功，长度: ${audio.samples.size} 采样点, 采样率: ${audio.sampleRate}Hz")
@@ -176,8 +163,25 @@ object TtsConfig {
 
                     onComplete(true, null)
                 } else {
-                    Log.e(TAG, "语音生成失败: audio=$audio, samples.size=${audio?.samples?.size ?: -1}")
-                    onComplete(false, "语音生成失败，返回为空")
+                    Log.e(TAG, "语音生成失败: samples 为空")
+
+                    // 尝试使用 GenerationConfig
+                    Log.d(TAG, "尝试使用 GenerationConfig...")
+                    val genConfig = GenerationConfig(
+                        sid = voiceStyle,
+                        speed = speed
+                    )
+
+                    val audio2 = ttsEngine?.generate(text, genConfig)
+                    Log.d(TAG, "generate with config 返回: audio=$audio2, samples.size=${audio2?.samples?.size ?: -1}")
+
+                    if (audio2 != null && audio2.samples.isNotEmpty()) {
+                        Log.d(TAG, "语音生成成功，长度: ${audio2.samples.size} 采样点, 采样率: ${audio2.sampleRate}Hz")
+                        playAudio(audio2.samples, audio2.sampleRate)
+                        onComplete(true, null)
+                    } else {
+                        onComplete(false, "语音生成失败，返回为空")
+                    }
                 }
 
             } catch (e: Exception) {
