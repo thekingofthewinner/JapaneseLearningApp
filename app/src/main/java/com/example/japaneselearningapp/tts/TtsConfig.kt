@@ -72,16 +72,20 @@ object TtsConfig {
             try {
                 Log.d(TAG, "开始初始化 TTS 引擎...")
                 
-                // 从 assets 复制模型文件到内部存储
-                modelDir = copyAssetsToInternal(context)
-                if (modelDir.isEmpty()) {
-                    onComplete(false, "无法复制模型文件")
+                // sherpa-onnx v1.13.x 需要从 assets 加载模型
+                // 配置模型路径（相对于 assets 目录）
+                val modelDir = "tts"
+                
+                // 检查 assets 中的模型文件是否存在
+                try {
+                    context.assets.open("$modelDir/tts.json").close()
+                    Log.d(TAG, "TTS 模型文件存在")
+                } catch (e: Exception) {
+                    onComplete(false, "未找到 TTS 模型文件")
                     return@Thread
                 }
                 
-                Log.d(TAG, "模型目录: $modelDir")
-                
-                // 构建配置
+                // 构建配置（使用 assets 中的相对路径）
                 val modelConfig = OfflineTtsSupertonicModelConfig(
                     durationPredictor = "$modelDir/duration_predictor.int8.onnx",
                     textEncoder = "$modelDir/text_encoder.int8.onnx",
@@ -102,10 +106,10 @@ object TtsConfig {
                 
                 Log.d(TAG, "开始创建 OfflineTts...")
                 
-                // 创建 TTS 引擎
-                // 注意：模型文件已经复制到内部存储，使用 context 访问
+                // 创建 TTS 引擎（使用 assetManager 从 assets 加载）
                 ttsEngine = OfflineTts(
-                    config = config
+                    context.assets,
+                    config
                 )
                 
                 Log.d(TAG, "OfflineTts 创建成功")

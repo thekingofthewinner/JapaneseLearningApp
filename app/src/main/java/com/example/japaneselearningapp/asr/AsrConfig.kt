@@ -41,79 +41,53 @@ object AsrConfig {
             try {
                 Log.d(TAG, "开始初始化 ASR 引擎...")
                 
-                // 从 assets 复制模型文件到内部存储
-                modelDir = copyAssetsToInternal(context)
-                if (modelDir.isEmpty()) {
-                    onComplete(false, "无法复制模型文件")
-                    return@Thread
-                }
+                // sherpa-onnx v1.13.x 需要从 assets 加载模型
+                // 配置模型路径（相对于 assets 目录）
+                val encoderPath = "asr/encoder.onnx"
+                val decoderPath = "asr/decoder.onnx"
+                val joinerPath = "asr/joiner.onnx"
+                val tokensPath = "asr/tokens.txt"
                 
-                Log.d(TAG, "模型目录: $modelDir")
-                
-                // 检查实际存在的模型文件
-                val hasEncoder = 
-                    File(modelDir, "encoder.onnx").exists() ||
-                    File(modelDir, "encoder.int8.onnx").exists() ||
-                    File(modelDir, "encoder-epoch-99-avg-1.onnx").exists() ||
-                    File(modelDir, "encoder-epoch-99-avg-1.int8.onnx").exists()
-                
-                val hasDecoder =
-                    File(modelDir, "decoder.onnx").exists() ||
-                    File(modelDir, "decoder.int8.onnx").exists() ||
-                    File(modelDir, "decoder-epoch-99-avg-1.onnx").exists() ||
-                    File(modelDir, "decoder-epoch-99-avg-1.int8.onnx").exists()
-                
-                val hasJoiner =
-                    File(modelDir, "joiner.onnx").exists() ||
-                    File(modelDir, "joiner.int8.onnx").exists() ||
-                    File(modelDir, "joiner-epoch-99-avg-1.onnx").exists() ||
-                    File(modelDir, "joiner-epoch-99-avg-1.int8.onnx").exists()
-                
-                // 获取实际的文件路径
-                fun getFilePath(baseName: String): String {
-                    return when {
-                        File(modelDir, baseName).exists() -> "$modelDir/$baseName"
-                        File(modelDir, baseName.replace(".onnx", ".int8.onnx")).exists() -> 
-                            "$modelDir/${baseName.replace(".onnx", ".int8.onnx")}"
-                        File(modelDir, baseName.replace(".onnx", "-epoch-99-avg-1.onnx")).exists() -> 
-                            "$modelDir/${baseName.replace(".onnx", "-epoch-99-avg-1.onnx")}"
-                        File(modelDir, baseName.replace(".onnx", "-epoch-99-avg-1.int8.onnx")).exists() -> 
-                            "$modelDir/${baseName.replace(".onnx", "-epoch-99-avg-1.int8.onnx")}"
-                        else -> "$modelDir/$baseName"
+                // 检查 assets 中的模型文件是否存在
+                try {
+                    context.assets.open(encoderPath).close()
+                    Log.d(TAG, "模型文件存在: $encoderPath")
+                } catch (e: Exception) {
+                    // 尝试 int8 版本
+                    val int8Path = "asr/encoder.int8.onnx"
+                    try {
+                        context.assets.open(int8Path).close()
+                        Log.d(TAG, "使用 int8 模型: $int8Path")
+                    } catch (e2: Exception) {
+                        onComplete(false, "未找到 ASR 模型文件: $encoderPath 或 $int8Path")
+                        return@Thread
                     }
                 }
                 
-                // 初始化 ASR（ReazonSpeech Zipformer 模型）
-                val asrConfig = if (hasEncoder) {
-                    // Transducer 模型（encoder + decoder + joiner）
-                    OfflineRecognizerConfig(
-                        featConfig = FeatureConfig(
-                            sampleRate = SAMPLE_RATE,
-                            featureDim = 80
+                // 构建 ASR 配置（使用 assets 中的相对路径）
+                val asrConfig = OfflineRecognizerConfig(
+                    featConfig = FeatureConfig(
+                        sampleRate = SAMPLE_RATE,
+                        featureDim = 80
+                    ),
+                    modelConfig = OfflineModelConfig(
+                        transducer = OfflineTransducerModelConfig(
+                            encoder = encoderPath,
+                            decoder = decoderPath,
+                            joiner = joinerPath
                         ),
-                        modelConfig = OfflineModelConfig(
-                            transducer = OfflineTransducerModelConfig(
-                                encoder = getFilePath("encoder.onnx"),
-                                decoder = if (hasDecoder) getFilePath("decoder.onnx") else getFilePath("encoder.onnx"),
-                                joiner = if (hasJoiner) getFilePath("joiner.onnx") else if (hasDecoder) getFilePath("decoder.onnx") else getFilePath("encoder.onnx")
-                            ),
-                            tokens = "$modelDir/tokens.txt",
-                            numThreads = 2,
-                            debug = true
-                        )
+                        tokens = tokensPath,
+                        numThreads = 2,
+                        debug = true
                     )
-                } else {
-                    onComplete(false, "未找到 ASR 模型文件（encoder/decoder/joiner）")
-                    return@Thread
-                }
+                )
                 
                 Log.d(TAG, "开始创建 OfflineRecognizer...")
                 
-                // 创建 ASR 识别器
-                // 注意：模型文件已经复制到内部存储，使用 context 访问
+                // 创建 ASR 识别器（使用 assetManager 从 assets 加载）
                 recognizer = OfflineRecognizer(
                     context.assets,
-                    config = asrConfig
+                    asrConfig
                 )
                 
                 Log.d(TAG, "OfflineRecognizer 创建成功")
