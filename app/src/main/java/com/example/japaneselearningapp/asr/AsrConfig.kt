@@ -93,23 +93,27 @@ object AsrConfig {
                         context.assets,
                         asrConfig
                     )
-                    
+
                     Log.d(TAG, "OfflineRecognizer 创建成功")
-                    
+
                     isInitialized = true
                     Log.d(TAG, "ASR 引擎初始化成功！")
-                    
+
                     onComplete(true, null)
                 } catch (e: Throwable) {
-                    // 使用 Throwable 捕获所有错误，包括 Error
-                    val errorMsg = "创建 OfflineRecognizer 失败: ${e.message}"
+                    // 使用 Throwable 捕获所有错误，包括 Error 和 native crash
+                    val errorMsg = "创建 OfflineRecognizer 失败: ${e.message}\n模型文件可能损坏或不兼容"
                     Log.e(TAG, errorMsg, e)
-                    
+
                     // 打印可能的 native 库加载问题
                     if (e is UnsatisfiedLinkError) {
                         Log.e(TAG, "Native 库加载失败！请检查 .so 文件是否正确打包", e)
                     }
-                    
+
+                    // 释放可能已创建的资源
+                    recognizer = null
+                    isInitialized = false
+
                     onComplete(false, errorMsg)
                 }
                 
