@@ -105,7 +105,6 @@ object TtsConfig {
                 // 创建 TTS 引擎
                 // 注意：模型文件已经复制到内部存储，使用 context 访问
                 ttsEngine = OfflineTts(
-                    context = context,
                     config = config
                 )
                 

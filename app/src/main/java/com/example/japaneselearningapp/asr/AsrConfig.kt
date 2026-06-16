@@ -112,7 +112,7 @@ object AsrConfig {
                 // 创建 ASR 识别器
                 // 注意：模型文件已经复制到内部存储，使用 context 访问
                 recognizer = OfflineRecognizer(
-                    context = context,
+                    context.assets,
                     config = asrConfig
                 )
                 
