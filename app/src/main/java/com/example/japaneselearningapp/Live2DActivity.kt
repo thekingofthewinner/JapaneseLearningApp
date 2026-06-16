@@ -297,7 +297,7 @@ class Live2DActivity : AppCompatActivity() {
             text = text,
             language = language,
             voiceStyle = VoiceStyles.STYLE_5,
-            speed = 1.0f
+            speed = 0.7f  // 降低语速，0.5-0.7 比较自然
         ) { success, error ->
             isSpeaking.set(false)
             runOnUiThread {
