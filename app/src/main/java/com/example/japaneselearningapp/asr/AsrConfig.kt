@@ -36,8 +36,6 @@ object AsrConfig {
         context: Context,
         onComplete: (Boolean, String?) -> Unit
     ) {
-        // 在后台线程初始化 ASR 引擎，避免阻塞主线程
-        Thread {
             try {
                 Log.d(TAG, "开始初始化 ASR 引擎...")
                 
@@ -60,7 +58,7 @@ object AsrConfig {
                         Log.d(TAG, "使用 int8 模型: $int8Path")
                     } catch (e2: Exception) {
                         onComplete(false, "未找到 ASR 模型文件: $encoderPath 或 $int8Path")
-                        return@Thread
+                        return
                     }
                 }
                 
@@ -102,7 +100,6 @@ object AsrConfig {
                 Log.e(TAG, errorMsg, e)
                 onComplete(false, errorMsg)
             }
-        }.start()
     }
     
     /**

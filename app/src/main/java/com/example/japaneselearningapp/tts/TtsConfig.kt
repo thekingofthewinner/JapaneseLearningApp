@@ -67,8 +67,7 @@ object TtsConfig {
      * 初始化 TTS 引擎
      */
     fun initialize(context: Context, onComplete: (Boolean, String?) -> Unit) {
-        // 在后台线程初始化 TTS 引擎，避免阻塞主线程
-        Thread {
+
             try {
                 Log.d(TAG, "开始初始化 TTS 引擎...")
                 
@@ -82,7 +81,7 @@ object TtsConfig {
                     Log.d(TAG, "TTS 模型文件存在")
                 } catch (e: Exception) {
                     onComplete(false, "未找到 TTS 模型文件")
-                    return@Thread
+                    return
                 }
                 
                 // 构建配置（使用 assets 中的相对路径）
@@ -125,7 +124,6 @@ object TtsConfig {
                 Log.e(TAG, errorMsg, e)
                 onComplete(false, errorMsg)
             }
-        }.start()
     }
     
     /**
