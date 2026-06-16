@@ -51,6 +51,9 @@ object AsrConfig {
                     context.assets.open(encoderPath).close()
                     Log.d(TAG, "模型文件存在: $encoderPath")
                 } catch (e: Exception) {
+                    val errorMsg = "ASR 模型文件不存在: $encoderPath"
+                    Log.e(TAG, errorMsg, e)
+                    onComplete(false, errorMsg)
                     return
                 }
                 
@@ -74,18 +77,41 @@ object AsrConfig {
                 
                 Log.d(TAG, "开始创建 OfflineRecognizer...")
                 
-                // 创建 ASR 识别器（使用 assetManager 从 assets 加载）
-                recognizer = OfflineRecognizer(
-                    context.assets,
-                    asrConfig
-                )
+                // 检查 native 库是否可用
+                try {
+                    System.loadLibrary("sherpa-onnx-jni")
+                    Log.d(TAG, "sherpa-onnx native 库加载成功")
+                } catch (e: UnsatisfiedLinkError) {
+                    Log.e(TAG, "sherpa-onnx native 库加载失败", e)
+                    onComplete(false, "Native 库加载失败: ${e.message}")
+                    return
+                }
                 
-                Log.d(TAG, "OfflineRecognizer 创建成功")
-                
-                isInitialized = true
-                Log.d(TAG, "ASR 引擎初始化成功！")
-                
-                onComplete(true, null)
+                try {
+                    // 创建 ASR 识别器（使用 assetManager 从 assets 加载）
+                    recognizer = OfflineRecognizer(
+                        context.assets,
+                        asrConfig
+                    )
+                    
+                    Log.d(TAG, "OfflineRecognizer 创建成功")
+                    
+                    isInitialized = true
+                    Log.d(TAG, "ASR 引擎初始化成功！")
+                    
+                    onComplete(true, null)
+                } catch (e: Throwable) {
+                    // 使用 Throwable 捕获所有错误，包括 Error
+                    val errorMsg = "创建 OfflineRecognizer 失败: ${e.message}"
+                    Log.e(TAG, errorMsg, e)
+                    
+                    // 打印可能的 native 库加载问题
+                    if (e is UnsatisfiedLinkError) {
+                        Log.e(TAG, "Native 库加载失败！请检查 .so 文件是否正确打包", e)
+                    }
+                    
+                    onComplete(false, errorMsg)
+                }
                 
             } catch (e: Exception) {
                 val errorMsg = "ASR 引擎初始化失败: ${e.message}"
