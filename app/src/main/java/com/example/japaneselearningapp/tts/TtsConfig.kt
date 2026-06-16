@@ -172,7 +172,7 @@ object TtsConfig {
                         speed = speed
                     )
 
-                    val audio2 = ttsEngine?.generate(text, genConfig)
+                    val audio2 = ttsEngine?.generate(text, voiceStyle,speed)
                     Log.d(TAG, "generate with config 返回: audio=$audio2, samples.size=${audio2?.samples?.size ?: -1}")
 
                     if (audio2 != null && audio2.samples.isNotEmpty()) {
