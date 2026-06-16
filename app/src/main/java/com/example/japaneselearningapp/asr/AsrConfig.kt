@@ -41,9 +41,9 @@ object AsrConfig {
                 
                 // sherpa-onnx v1.13.x 需要从 assets 加载模型
                 // 配置模型路径（相对于 assets 目录）
-                val encoderPath = "asr/encoder.onnx"
-                val decoderPath = "asr/decoder.onnx"
-                val joinerPath = "asr/joiner.onnx"
+                val encoderPath = "asr/encoder.int8.onnx"
+                val decoderPath = "asr/decoder.int8.onnx"
+                val joinerPath = "asr/joiner.int8.onnx"
                 val tokensPath = "asr/tokens.txt"
                 
                 // 检查 assets 中的模型文件是否存在
@@ -51,15 +51,7 @@ object AsrConfig {
                     context.assets.open(encoderPath).close()
                     Log.d(TAG, "模型文件存在: $encoderPath")
                 } catch (e: Exception) {
-                    // 尝试 int8 版本
-                    val int8Path = "asr/encoder.int8.onnx"
-                    try {
-                        context.assets.open(int8Path).close()
-                        Log.d(TAG, "使用 int8 模型: $int8Path")
-                    } catch (e2: Exception) {
-                        onComplete(false, "未找到 ASR 模型文件: $encoderPath 或 $int8Path")
-                        return
-                    }
+                    return
                 }
                 
                 // 构建 ASR 配置（使用 assets 中的相对路径）
@@ -101,149 +93,6 @@ object AsrConfig {
                 onComplete(false, errorMsg)
             }
     }
-    
-    /**
-     * 从 assets 复制模型文件到内部存储
-     */
-    private fun copyAssetsToInternal(context: Context): String {
-        val asrDir = File(context.filesDir, "asr")
-        if (!asrDir.exists()) {
-            asrDir.mkdirs()
-        }
-        
-        // 尝试多种可能的模型文件结构
-        // ReazonSpeech 模型可能解压后的目录结构：
-        // 1. 直接在 asr/ 目录下（encoder.onnx, decoder.onnx, joiner.onnx, tokens.txt）
-        // 2. 在 asr/1a，转录为/ 子目录下
-        
-        val possibleModelFiles = listOf(
-            "encoder.onnx",
-            "encoder.int8.onnx",
-            "encoder-epoch-99-avg-1.onnx",
-            "encoder-epoch-99-avg-1.int8.onnx",
-            "model.onnx",
-            "model.int8.onnx"
-        )
-        
-        val possibleTokensFiles = listOf(
-            "tokens.txt"
-        )
-        
-        val possibleVadFiles = listOf(
-            "silero_vad.onnx"
-        )
-        
-        // 检查是否已经有模型文件
-        var hasModel = false
-        for (fileName in possibleModelFiles) {
-            val file = File(asrDir, fileName)
-            if (file.exists()) {
-                hasModel = true
-                Log.d(TAG, "模型文件已存在: $fileName")
-                break
-            }
-        }
-        
-        // 复制 ASR 模型文件
-        if (!hasModel) {
-            // 尝试从 asr/ 目录复制
-            for (fileName in possibleModelFiles) {
-                try {
-                    val destFile = File(asrDir, fileName)
-                    if (!destFile.exists()) {
-                        context.assets.open("asr/$fileName").use { input ->
-                            FileOutputStream(destFile).use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                        Log.d(TAG, "复制模型文件: $fileName")
-                        hasModel = true
-                        break
-                    }
-                } catch (e: Exception) {
-                    Log.d(TAG, "尝试复制 $fileName 失败，继续尝试其他文件...")
-                }
-            }
-            
-            // 如果 asr/ 目录没有，尝试从 asr/1a，转录为/ 目录复制
-            if (!hasModel) {
-                for (fileName in possibleModelFiles) {
-                    try {
-                        val destFile = File(asrDir, fileName)
-                        if (!destFile.exists()) {
-                            context.assets.open("asr/1a，转录为/$fileName").use { input ->
-                                FileOutputStream(destFile).use { output ->
-                                    input.copyTo(output)
-                                }
-                            }
-                            Log.d(TAG, "从 1a，转录为/ 复制模型文件: $fileName")
-                            hasModel = true
-                            break
-                        }
-                    } catch (e: Exception) {
-                        Log.d(TAG, "尝试从 1a，转录为/ 复制 $fileName 失败...")
-                    }
-                }
-            }
-        }
-        
-        // 复制 tokens.txt
-        var hasTokens = File(asrDir, "tokens.txt").exists()
-        if (!hasTokens) {
-            try {
-                context.assets.open("asr/tokens.txt").use { input ->
-                    FileOutputStream(File(asrDir, "tokens.txt")).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-                Log.d(TAG, "复制 tokens.txt")
-                hasTokens = true
-            } catch (e: Exception) {
-                try {
-                    context.assets.open("asr/1a，转录为/tokens.txt").use { input ->
-                        FileOutputStream(File(asrDir, "tokens.txt")).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    Log.d(TAG, "从 1a，转录为/ 复制 tokens.txt")
-                    hasTokens = true
-                } catch (e2: Exception) {
-                    Log.e(TAG, "复制 tokens.txt 失败", e2)
-                }
-            }
-        }
-        
-        // 复制 VAD 模型
-        for (fileName in possibleVadFiles) {
-            try {
-                val vadFile = File(asrDir, fileName)
-                if (!vadFile.exists()) {
-                    context.assets.open("asr/$fileName").use { input ->
-                        FileOutputStream(vadFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    Log.d(TAG, "复制 VAD 模型文件: $fileName")
-                }
-            } catch (e: Exception) {
-                Log.d(TAG, "复制 VAD 模型 $fileName 失败（VAD 可选）")
-            }
-        }
-        
-        // 检查必要的文件是否存在
-        if (!hasModel) {
-            Log.e(TAG, "没有找到模型文件！")
-            return ""
-        }
-        
-        if (!hasTokens) {
-            Log.e(TAG, "没有找到 tokens.txt！")
-            return ""
-        }
-        
-        return asrDir.absolutePath
-    }
-    
     /**
      * 识别音频（简单版本，不使用 VAD）
      */

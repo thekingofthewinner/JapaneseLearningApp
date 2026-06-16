@@ -125,52 +125,6 @@ object TtsConfig {
                 onComplete(false, errorMsg)
             }
     }
-    
-    /**
-     * 从 assets 复制模型文件到内部存储
-     */
-    private fun copyAssetsToInternal(context: Context): String {
-        val destDir = File(context.filesDir, TTS_ASSET_DIR)
-        if (destDir.exists() && destDir.listFiles()?.isNotEmpty() == true) {
-            Log.d(TAG, "模型文件已存在，跳过复制")
-            return destDir.absolutePath
-        }
-        
-        try {
-            destDir.mkdirs()
-            
-            val assetFiles = listOf(
-                "duration_predictor.int8.onnx",
-                "text_encoder.int8.onnx",
-                "vector_estimator.int8.onnx",
-                "vocoder.int8.onnx",
-                "tts.json",
-                "unicode_indexer.bin",
-                "voice.bin"
-            )
-            
-            assetFiles.forEach { fileName ->
-                val assetPath = "$TTS_ASSET_DIR/$fileName"
-                val destFile = File(destDir, fileName)
-                
-                if (!destFile.exists()) {
-                    context.assets.open(assetPath).use { input ->
-                        FileOutputStream(destFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    Log.d(TAG, "已复制: $fileName")
-                }
-            }
-            
-            return destDir.absolutePath
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "复制模型文件失败", e)
-            return ""
-        }
-    }
-    
     /**
      * 生成语音并直接播放
      */
