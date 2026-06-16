@@ -143,7 +143,7 @@ object TtsConfig {
         Thread {
             try {
                 Log.d(TAG, "生成语音: $text (语言: $language, 风格: $voiceStyle, 语速: $speed)")
-                
+
                 // 构建生成配置
                 val genConfig = GenerationConfig(
                     sid = voiceStyle,
@@ -151,7 +151,9 @@ object TtsConfig {
                     numSteps = 8,
                     extra = mapOf("lang" to language)
                 )
-                
+
+                Log.d(TAG, "开始调用 generateWithConfigAndCallback...")
+
                 // 生成语音
                 val audio = ttsEngine?.generateWithConfigAndCallback(
                     text = text,
@@ -163,18 +165,21 @@ object TtsConfig {
                         1
                     }
                 )
-                
+
+                Log.d(TAG, "generateWithConfigAndCallback 返回: audio=$audio")
+
                 if (audio != null && audio.samples.isNotEmpty()) {
                     Log.d(TAG, "语音生成成功，长度: ${audio.samples.size} 采样点, 采样率: ${audio.sampleRate}Hz")
-                    
+
                     // 播放音频
                     playAudio(audio.samples, audio.sampleRate)
-                    
+
                     onComplete(true, null)
                 } else {
+                    Log.e(TAG, "语音生成失败: audio=$audio, samples.size=${audio?.samples?.size ?: -1}")
                     onComplete(false, "语音生成失败，返回为空")
                 }
-                
+
             } catch (e: Exception) {
                 val errorMsg = "语音生成失败: ${e.message}"
                 Log.e(TAG, errorMsg, e)
