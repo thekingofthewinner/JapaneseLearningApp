@@ -120,33 +120,40 @@ class Live2DActivity : AppCompatActivity() {
     }
 
     private fun initializeEngines() {
+        // 先显示Live2D模型，然后异步初始化引擎
+        Log.d(TAG, "初始化引擎...")
+        
         // 初始化 TTS
-        Log.d(TAG, "初始化 TTS 引擎...")
-        TtsConfig.initialize(this) { success, error ->
+        TtsConfig.initialize(this) { ttsSuccess, ttsError ->
             runOnUiThread {
-                if (success) {
+                if (ttsSuccess) {
                     Log.d(TAG, "TTS 引擎初始化成功")
-                    initializeAsr()
                 } else {
-                    Log.e(TAG, "TTS 引擎初始化失败: $error")
-                    Toast.makeText(this, "TTS 初始化失败: $error", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "TTS 引擎初始化失败: $ttsError")
+                    Toast.makeText(this, "TTS 初始化失败，将使用文字模式", Toast.LENGTH_SHORT).show()
                 }
+                
+                // 无论TTS是否成功，都尝试初始化ASR
+                initializeAsr()
             }
         }
     }
 
     private fun initializeAsr() {
-        // 初始化 ASR
-        Log.d(TAG, "初始化 ASR 引擎...")
-        AsrConfig.initialize(this) { success, error ->
+        AsrConfig.initialize(this) { asrSuccess, asrError ->
             runOnUiThread {
-                if (success) {
+                if (asrSuccess) {
                     Log.d(TAG, "ASR 引擎初始化成功")
-                    startConversation()
                 } else {
-                    Log.e(TAG, "ASR 引擎初始化失败: $error")
-                    Toast.makeText(this, "ASR 初始化失败: $error", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "ASR 引擎初始化失败: $asrError")
+                    Toast.makeText(this, "ASR 初始化失败，语音功能不可用", Toast.LENGTH_SHORT).show()
+                    // ASR失败时禁用麦克风按钮
+                    micButton.isEnabled = false
+                    micButton.alpha = 0.5f
                 }
+                
+                // 无论ASR是否成功，都显示欢迎界面
+                startConversation()
             }
         }
     }
@@ -155,10 +162,17 @@ class Live2DActivity : AppCompatActivity() {
      * 开始对话
      */
     private fun startConversation() {
-        // 播放欢迎语
-        speakText("こんにちは！私はAIアシスタントの春です。何か話しかけてください。", "ja") {
-            // 欢迎语播放完成后，开始监听
-            startListening()
+        // 播放欢迎语（如果TTS可用）
+        if (TtsConfig.isInitialized()) {
+            speakText("こんにちは！私はAIアシスタントの春です。何か話しかけてください。", "ja") {
+                // 欢迎语播放完成后，如果ASR可用则开始监听
+                if (AsrConfig.isInitialized()) {
+                    startListening()
+                }
+            }
+        } else {
+            // TTS不可用时，直接显示文字提示
+            statusText.text = "欢迎！请点击麦克风开始对话"
         }
     }
 

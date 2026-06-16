@@ -67,52 +67,62 @@ object TtsConfig {
      * 初始化 TTS 引擎
      */
     fun initialize(context: Context, onComplete: (Boolean, String?) -> Unit) {
-        try {
-            Log.d(TAG, "开始初始化 TTS 引擎...")
-            
-            // 从 assets 复制模型文件到内部存储
-            modelDir = copyAssetsToInternal(context)
-            if (modelDir.isEmpty()) {
-                onComplete(false, "无法复制模型文件")
-                return
-            }
-            
-            Log.d(TAG, "模型目录: $modelDir")
-            
-            // 构建配置
-            val modelConfig = OfflineTtsSupertonicModelConfig(
-                durationPredictor = "$modelDir/duration_predictor.int8.onnx",
-                textEncoder = "$modelDir/text_encoder.int8.onnx",
-                vectorEstimator = "$modelDir/vector_estimator.int8.onnx",
-                vocoder = "$modelDir/vocoder.int8.onnx",
-                ttsJson = "$modelDir/tts.json",
-                unicodeIndexer = "$modelDir/unicode_indexer.bin",
-                voiceStyle = "$modelDir/voice.bin"
-            )
-            
-            val config = OfflineTtsConfig(
-                model = OfflineTtsModelConfig(
-                    supertonic = modelConfig,
-                    numThreads = 2,
-                    debug = true
+        // 在后台线程初始化 TTS 引擎，避免阻塞主线程
+        Thread {
+            try {
+                Log.d(TAG, "开始初始化 TTS 引擎...")
+                
+                // 从 assets 复制模型文件到内部存储
+                modelDir = copyAssetsToInternal(context)
+                if (modelDir.isEmpty()) {
+                    onComplete(false, "无法复制模型文件")
+                    return@Thread
+                }
+                
+                Log.d(TAG, "模型目录: $modelDir")
+                
+                // 构建配置
+                val modelConfig = OfflineTtsSupertonicModelConfig(
+                    durationPredictor = "$modelDir/duration_predictor.int8.onnx",
+                    textEncoder = "$modelDir/text_encoder.int8.onnx",
+                    vectorEstimator = "$modelDir/vector_estimator.int8.onnx",
+                    vocoder = "$modelDir/vocoder.int8.onnx",
+                    ttsJson = "$modelDir/tts.json",
+                    unicodeIndexer = "$modelDir/unicode_indexer.bin",
+                    voiceStyle = "$modelDir/voice.bin"
                 )
-            )
-            
-            // 创建 TTS 引擎
-            // 注意：模型文件已经复制到内部存储，所以不使用 assetManager
-            ttsEngine = OfflineTts(config = config)
-            
-            isInitialized = true
-            Log.d(TAG, "TTS 引擎初始化成功！")
-            Log.d(TAG, "支持的语言: ${SUPPORTED_LANGUAGES.keys.joinToString()}")
-            
-            onComplete(true, null)
-            
-        } catch (e: Exception) {
-            val errorMsg = "TTS 引擎初始化失败: ${e.message}"
-            Log.e(TAG, errorMsg, e)
-            onComplete(false, errorMsg)
-        }
+                
+                val config = OfflineTtsConfig(
+                    model = OfflineTtsModelConfig(
+                        supertonic = modelConfig,
+                        numThreads = 2,
+                        debug = true
+                    )
+                )
+                
+                Log.d(TAG, "开始创建 OfflineTts...")
+                
+                // 创建 TTS 引擎
+                // 注意：模型文件已经复制到内部存储，使用 context 访问
+                ttsEngine = OfflineTts(
+                    context = context,
+                    config = config
+                )
+                
+                Log.d(TAG, "OfflineTts 创建成功")
+                
+                isInitialized = true
+                Log.d(TAG, "TTS 引擎初始化成功！")
+                Log.d(TAG, "支持的语言: ${SUPPORTED_LANGUAGES.keys.joinToString()}")
+                
+                onComplete(true, null)
+                
+            } catch (e: Exception) {
+                val errorMsg = "TTS 引擎初始化失败: ${e.message}"
+                Log.e(TAG, errorMsg, e)
+                onComplete(false, errorMsg)
+            }
+        }.start()
     }
     
     /**
