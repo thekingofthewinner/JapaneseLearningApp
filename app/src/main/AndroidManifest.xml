@@ -81,6 +81,11 @@
                 android:label="会话练习"
                 android:theme="@style/Theme.JapaneseLearningApp"
                 android:screenOrientation="portrait" />
+        <activity
+                android:name=".WordActivity"
+                android:exported="false"
+                android:label="单词列表"
+                android:theme="@style/Theme.JapaneseLearningApp" />
     </application>
 
 </manifest>
