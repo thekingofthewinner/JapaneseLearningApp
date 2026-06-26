@@ -190,7 +190,7 @@ class Live2DActivity : AppCompatActivity() {
     private fun startConversation() {
         // 播放欢迎语（如果TTS可用）
         if (TtsConfig.isInitialized()) {
-            speakText("こんにちは！私はAIアシスタントの春です。何か話しかけてください。", "ja") {
+            speakText("こんにちは！私は AI アシスタントの春です。いつも画面の前の皆さんとお話できるのを楽しみに待っています。日常のちょっとした雑談はもちろん、疑問の解決や知りたい情報の調べ、気分転換のお喋りまで、どんな小さなことでも気軽に話しかけてください。あなたの言葉をしっかり受け止めて、優しくお返事いたします。", "ja") {
                 // 欢迎语播放完成后，如果ASR可用则开始监听
                 if (AsrConfig.isInitialized()) {
                     startListening()
@@ -316,7 +316,7 @@ class Live2DActivity : AppCompatActivity() {
             text = text,
             language = language,
             voiceStyle = VoiceStyles.STYLE_5,
-            speed = 0.7f  // 降低语速，0.5-0.7 比较自然
+            speed = 0.5f  // 降低语速，0.5-0.7 比较自然
         ) { success, error ->
             isSpeaking.set(false)
             runOnUiThread {

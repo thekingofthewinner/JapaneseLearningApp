@@ -132,7 +132,7 @@ object TtsConfig {
         text: String,
         language: String = DEFAULT_LANGUAGE,
         voiceStyle: Int = VoiceStyles.DEFAULT,
-        speed: Float = 1.0f,
+        speed: Float = 0.5f,
         onComplete: (Boolean, String?) -> Unit
     ) {
         if (!isInitialized || ttsEngine == null) {

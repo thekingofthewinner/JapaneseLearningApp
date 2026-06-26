@@ -35,7 +35,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.shadow
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.example.japaneselearningapp.data.AppDatabase
 import com.example.japaneselearningapp.data.entity.WordEntity
 import com.example.japaneselearningapp.tts.TtsConfig
+import com.example.japaneselearningapp.tts.TtsConfig.VoiceStyles.STYLE_6
 import com.example.japaneselearningapp.ui.theme.JapaneseLearningAppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -157,7 +158,7 @@ fun WordListPage(onBack: () -> Unit) {
                             onLongPress = {
                                 // 长按播放 TTS
                                 if (TtsConfig.isInitialized()) {
-                                    TtsConfig.speak(word.wordJp, "ja", 0.7f) { success, error ->
+                                    TtsConfig.speak(word.wordJp, "ja",STYLE_6, 0.7f) { success, error ->
                                         if (!success) {
                                             Log.e("WordActivity", "TTS 播放失败: $error")
                                         }
