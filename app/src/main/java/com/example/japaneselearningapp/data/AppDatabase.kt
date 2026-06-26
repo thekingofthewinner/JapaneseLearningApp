@@ -187,7 +187,7 @@ abstract class AppDatabase : RoomDatabase() {
                         TextContentEntity(
                             lessonId = textData.lessonId,
                             textContent = textData.textContent,
-                            voicePath = textData.voicePath
+                            courseTitle = textData.courseTitle
                         )
                     }
                     database.textContentDao().insertTextList(textContentEntities)
@@ -211,7 +211,7 @@ abstract class AppDatabase : RoomDatabase() {
                         lessonId = wordData.lessonId,
                         wordJp = wordData.japaneseWord,
                         wordCn = wordData.chineseMeaning,
-                        wordPron = wordData.pronunciation
+                        wordAttr = wordData.wordAttributes
                     )
                     database.wordDao().insertWord(wordEntity)
                 }

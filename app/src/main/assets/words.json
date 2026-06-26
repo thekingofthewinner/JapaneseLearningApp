@@ -1,37 +1,230 @@
-
 [
-  {"lessonId": 12, "japaneseWord": "あめ（雨）①", "chineseMeaning": "雨", "pronunciation": "ame"},
-  {"lessonId": 12, "japaneseWord": "▲ほっかいどう（北海道）③", "chineseMeaning": "北海道", "pronunciation": "hokkaidou"},
-  {"lessonId": 12, "japaneseWord": "▲～より", "chineseMeaning": "比～", "pronunciation": "yori"},
-  {"lessonId": 12, "japaneseWord": "なつ（夏）②", "chineseMeaning": "夏天", "pronunciation": "natsu"},
-  {"lessonId": 12, "japaneseWord": "いちばん（一番）⑩", "chineseMeaning": "最", "pronunciation": "ichiban"},
-  {"lessonId": 12, "japaneseWord": "パーティー（party）①", "chineseMeaning": "晚会、派对（～をします）", "pronunciation": "paatii"},
-  {"lessonId": 12, "japaneseWord": "ずっと①", "chineseMeaning": "～得多", "pronunciation": "zutto"},
-  {"lessonId": 12, "japaneseWord": "くうこう（空港）⑩", "chineseMeaning": "机场", "pronunciation": "kuukou"},
-  {"lessonId": 12, "japaneseWord": "どちら①", "chineseMeaning": "哪一个？（从两个中选择）", "pronunciation": "dochira"},
-  {"lessonId": 12, "japaneseWord": "はやい（速い/早い）②", "chineseMeaning": "快、早", "pronunciation": "hayai"},
-  {"lessonId": 12, "japaneseWord": "おそい（遅い）①*", "chineseMeaning": "慢", "pronunciation": "osoi"},
-  {"lessonId": 12, "japaneseWord": "うみ（海）①", "chineseMeaning": "海", "pronunciation": "umi"},
-  {"lessonId": 12, "japaneseWord": "どちらも①", "chineseMeaning": "两个都～", "pronunciation": "dochira mo"},
-  {"lessonId": 12, "japaneseWord": "てんぷら（天麩羅）⑩", "chineseMeaning": "天妇罗（日本菜，一种把鱼虾裹上面粉糊后油炸而成的食品）", "pronunciation": "tenpura"},
-  {"lessonId": 12, "japaneseWord": "ぎおんまつり（祇園祭）④", "chineseMeaning": "祇园祭（京都最有名的庙会）", "pronunciation": "gion matsuri"},
-  {"lessonId": 12, "japaneseWord": "ただいま。②", "chineseMeaning": "我回来了。", "pronunciation": "tadaima"},
-  {"lessonId": 12, "japaneseWord": "おかえりなさい。", "chineseMeaning": "回来啦。", "pronunciation": "okaerinasai"},
-  {"lessonId": 12, "japaneseWord": "[お]まつり（お祭り）⑩", "chineseMeaning": "庙会、庆典、节庆", "pronunciation": "omatsuri"},
-  {"lessonId": 12, "japaneseWord": "わあ、すごい人ですね。", "chineseMeaning": "哇，人好多啊！", "pronunciation": "waa, sugoi hito desu ne"},
-  {"lessonId": 12, "japaneseWord": "つかれました。", "chineseMeaning": "我累了。", "pronunciation": "tsukaremashita"},
-  {"lessonId": 12, "japaneseWord": "ゆき（雪）②", "chineseMeaning": "雪", "pronunciation": "yuki"},
-  {"lessonId": 12, "japaneseWord": "せかい（世界）①②", "chineseMeaning": "世界", "pronunciation": "sekai"},
-  {"lessonId": 12, "japaneseWord": "てんき（天気）①", "chineseMeaning": "天气", "pronunciation": "tenki"},
-  {"lessonId": 12, "japaneseWord": "すずしい（涼しい）③", "chineseMeaning": "凉快", "pronunciation": "suzushii"},
-  {"lessonId": 12, "japaneseWord": "ふゆ（冬）②", "chineseMeaning": "冬天", "pronunciation": "fuyu"},
-  {"lessonId": 12, "japaneseWord": "あたたかい（暖かい/温かい）④", "chineseMeaning": "暖和、温", "pronunciation": "atatakai"},
-  {"lessonId": 12, "japaneseWord": "おおい（多い）①", "chineseMeaning": "多", "pronunciation": "ooi"},
-  {"lessonId": 12, "japaneseWord": "人が多い。", "chineseMeaning": "人多。", "pronunciation": "hito ga ooi"},
-  {"lessonId": 12, "japaneseWord": "かんたん（簡単）⑩", "chineseMeaning": "简单", "pronunciation": "kantan"},
-  {"lessonId": 12, "japaneseWord": "くもり（曇り）③", "chineseMeaning": "阴", "pronunciation": "kumori"},
-  {"lessonId": 12, "japaneseWord": "からい（辛い）②", "chineseMeaning": "辣", "pronunciation": "karai"},
-  {"lessonId": 12, "japaneseWord": "ホテル（hotel）①", "chineseMeaning": "饭店", "pronunciation": "hoteru"},
-  {"lessonId": 12, "japaneseWord": "おもい（重い）⑩", "chineseMeaning": "重", "pronunciation": "omoi"},
-  {"lessonId": 12, "japaneseWord": "ぎゅうにく（牛肉）⑩", "chineseMeaning": "牛肉", "pronunciation": "gyuuniku"}
+  {
+    "lessonId": 17,
+    "japaneseWord": "だいじょうぶ（大丈夫）③",
+    "chineseMeaning": "没问题、不要紧",
+    "wordAttr": "ナ形"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "しんぱいします（←心配する）①",
+    "chineseMeaning": "担心",
+    "wordAttr": "動Ⅲ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "ですから①",
+    "chineseMeaning": "因此",
+    "wordAttr": "接"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "はらいます（←払う）②",
+    "chineseMeaning": "付（钱）、付钱",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "～までに",
+    "chineseMeaning": "到～为止（指时间期限）",
+    "wordAttr": "助"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "どうしましたか。",
+    "chineseMeaning": "怎么了？",
+    "wordAttr": null
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "のど（喉）①",
+    "chineseMeaning": "嗓子",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "いたい（痛い）①",
+    "chineseMeaning": "疼、痛",
+    "wordAttr": "イ形"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "[～が] いたいです。",
+    "chineseMeaning": "[～]疼、喉咙疼",
+    "wordAttr": null
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "ねつ（熱）②",
+    "chineseMeaning": "发烧",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "▲ねつがある。",
+    "chineseMeaning": "发烧",
+    "wordAttr": null
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "かぜ（風邪）①",
+    "chineseMeaning": "感冒",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "に、さんにち（2、3日）②",
+    "chineseMeaning": "两三天",
+    "wordAttr": "連語"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "2、3～",
+    "chineseMeaning": "两三～",
+    "wordAttr": null
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "しゅっちょうします（←出張する）①",
+    "chineseMeaning": "出差",
+    "wordAttr": "動Ⅲ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "くすり（薬）①",
+    "chineseMeaning": "药",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "のみます（←飲む）①",
+    "chineseMeaning": "吃（药）、吃药",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "それから①",
+    "chineseMeaning": "还有",
+    "wordAttr": "接"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "[お]ふろ（お風呂）②",
+    "chineseMeaning": "洗澡、澡盆",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "いります（←入る）①",
+    "chineseMeaning": "进、入、洗（澡）",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "おふろにいります。",
+    "chineseMeaning": "洗澡。",
+    "wordAttr": null
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "▲だいじ（大事）①",
+    "chineseMeaning": "珍贵、重要；多保重（对患病、受伤的人说）",
+    "wordAttr": "ナ形"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "わすれます（←忘れる）①",
+    "chineseMeaning": "忘记",
+    "wordAttr": "動Ⅱ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "かえします（←返す）①",
+    "chineseMeaning": "归还、返回",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "ざんぎします（←残業する）①",
+    "chineseMeaning": "加班",
+    "wordAttr": "動Ⅲ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "▲ぬぎます（←脱ぐ）①",
+    "chineseMeaning": "脱（衣服、鞋等）、脱鞋",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "きんえん（禁煙）①",
+    "chineseMeaning": "禁烟",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "あぶない（危ない）①③",
+    "chineseMeaning": "危险",
+    "wordAttr": "イ形"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "たいせつ（大切）①",
+    "chineseMeaning": "重要",
+    "wordAttr": "ナ形"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "なくします（←無くす）①",
+    "chineseMeaning": "丢失",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "おぼえます（←覚える）③",
+    "chineseMeaning": "记住",
+    "wordAttr": "動Ⅱ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "持って行きます（←持って行く①-①）",
+    "chineseMeaning": "带去、拿去",
+    "wordAttr": "動Ⅰ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "でかけます（←出かける）①",
+    "chineseMeaning": "出门、外出",
+    "wordAttr": "動Ⅱ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "びょうき（病気）①",
+    "chineseMeaning": "疾病",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "[けんこう] ほけんしょう（健康保険証）①",
+    "chineseMeaning": "[健康] 保险证",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "持って来ます（←持って来る①-①）",
+    "chineseMeaning": "带来、拿来",
+    "wordAttr": "動Ⅲ"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "うわぎ（上着）①",
+    "chineseMeaning": "外套",
+    "wordAttr": "名"
+  },
+  {
+    "lessonId": 17,
+    "japaneseWord": "したぎ（下着）①",
+    "chineseMeaning": "内衣",
+    "wordAttr": "名"
+  }
 ]

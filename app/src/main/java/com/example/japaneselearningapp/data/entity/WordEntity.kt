@@ -18,5 +18,5 @@ data class WordEntity(
     val lessonId: Int,       // 关联课时ID
     val wordJp: String,      // 日文单词
     val wordCn: String,      // 中文释义
-    val wordPron: String? = null // 读音（可选）
+    val wordAttr: String? = null // 单词属性（可选）
 )

@@ -79,11 +79,6 @@ fun WordListPage(onBack: () -> Unit) {
     val database = remember { AppDatabase.getInstance(context) }
     val allWords by database.wordDao().getAllWords().collectAsState(initial = emptyList())
 
-    // 按 lessonId 分组
-    val wordsByLesson = remember(allWords) {
-        allWords.groupBy { it.lessonId }.toSortedMap()
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -97,82 +92,23 @@ fun WordListPage(onBack: () -> Unit) {
             )
             .padding(16.dp)
     ) {
-        Column(
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // 标题
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(bottom = 16.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color.Transparent)
-                    .drawWithContent {
-                        drawContent()
-                        drawRoundRect(
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.4f),
-                                    Color.Transparent,
-                                    Color.Transparent,
-                                    Color.White.copy(alpha = 0.3f)
-                                ),
-                                start = Offset(0f, 0f),
-                                end = Offset(size.width, size.height)
-                            ),
-                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(20.dp.toPx())
-                        )
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "单词列表",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            // 单词列表（支持滑动）
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                wordsByLesson.forEach { (lessonId, words) ->
-                    item {
-                        // 课时标题
-                        Text(
-                            text = "第 ${lessonId} 课",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.9f),
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-
-                    items(words) { word ->
-                        WordCard(
-                            word = word,
-                            onLongPress = {
-                                // 长按播放 TTS
-                                if (TtsConfig.isInitialized()) {
-                                    TtsConfig.speak(word.wordJp, "ja",STYLE_6, 0.7f) { success, error ->
-                                        if (!success) {
-                                            Log.e("WordActivity", "TTS 播放失败: $error")
-                                        }
-                                    }
+            items(allWords) { word ->
+                WordCard(
+                    word = word,
+                    onLongPress = {
+                        if (TtsConfig.isInitialized()) {
+                            TtsConfig.speak(word.wordJp, "ja",STYLE_6, 0.7f) { success, error ->
+                                if (!success) {
+                                    Log.e("WordActivity", "TTS 播放失败: $error")
                                 }
                             }
-                        )
+                        }
                     }
-
-                    // 课时之间的间隔
-                    item {
-                        Box(modifier = Modifier.height(16.dp))
-                    }
-                }
+                )
             }
         }
     }
@@ -184,17 +120,15 @@ fun WordCard(
     onLongPress: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    var pressJob by remember { mutableStateOf<Job?>(null) }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clip(RoundedCornerShape(16.dp))
-            // 玻璃板效果 - 更厚实的阴影和半透明背景
+            .height(62.dp)
+            .clip(RoundedCornerShape(20.dp))
             .shadow(
                 elevation = 12.dp,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 spotColor = Color.Black.copy(alpha = 0.3f),
                 ambientColor = Color.Black.copy(alpha = 0.2f)
             )
@@ -213,43 +147,51 @@ fun WordCard(
                 detectTapGestures(
                     onPress = {
                         isPressed = true
-                        // 开始计时，0.5秒后触发长按
-                        pressJob = CoroutineScope(Dispatchers.Main).launch {
-                            delay(500)
-                            onLongPress()
-                        }
                         tryAwaitRelease()
+                    },
+                    onLongPress = {
                         isPressed = false
-                        pressJob?.cancel()
+                        onLongPress()
+                    },
+                    onTap = {
+                        isPressed = false
                     }
                 )
             }
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        contentAlignment = Alignment.CenterStart
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 日文单词
-            Text(
-                text = word.wordJp,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.weight(1f)
-            )
-
-            // 中文释义
-            Text(
-                text = word.wordCn,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black.copy(alpha = 0.75f),
+            Column(
                 modifier = Modifier.weight(1f),
-                textAlign = androidx.compose.ui.text.style.TextAlign.End
-            )
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = word.wordJp,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    text = word.wordCn,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black.copy(alpha = 0.75f)
+                )
+            }
+            
+            word.wordAttr?.let {
+                Text(
+                    text = it,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.Black.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }

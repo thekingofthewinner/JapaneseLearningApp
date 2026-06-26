@@ -17,5 +17,5 @@ data class TextContentEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val lessonId: Int,         // 关联课时ID
     val textContent: String,   // 课文文本
-    val voicePath: String? = null // 音频文件路径（可选）
+    val courseTitle: String    // 课程标题
 )
