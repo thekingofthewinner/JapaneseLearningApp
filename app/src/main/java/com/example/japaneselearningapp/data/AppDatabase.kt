@@ -30,7 +30,7 @@ import kotlinx.coroutines.Dispatchers
         WordEntity::class,
         UserRecordEntity::class
     ],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -211,7 +211,7 @@ abstract class AppDatabase : RoomDatabase() {
                         lessonId = wordData.lessonId,
                         wordJp = wordData.japaneseWord,
                         wordCn = wordData.chineseMeaning,
-                        wordAttr = wordData.wordAttributes
+                        wordAttr = wordData.wordAttr
                     )
                     database.wordDao().insertWord(wordEntity)
                 }

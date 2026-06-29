@@ -1,6 +1,7 @@
 package com.example.japaneselearningapp
-
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +32,7 @@ import com.example.japaneselearningapp.data.AppDatabase
 import com.example.japaneselearningapp.data.entity.GrammarEntity
 import com.example.japaneselearningapp.data.entity.TextContentEntity
 import com.example.japaneselearningapp.data.entity.WordEntity
+import com.example.japaneselearningapp.tts.TtsConfig
 import com.example.japaneselearningapp.ui.theme.JapaneseLearningAppTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -37,7 +40,21 @@ import kotlinx.coroutines.launch
 class LessonDetailActivity : ComponentActivity() {
 
     private lateinit var database: AppDatabase
+    override fun onStart() {
+        super.onStart()
+        TtsConfig.initialize(this) { success, error ->
+            if (success) {
+                Log.d("LessonDetailActivity", "TTS 引擎初始化成功")
+            } else {
+                Log.e("LessonDetailActivity", "TTS 引擎初始化失败: $error")
+            }
+        }
+    }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        TtsConfig.release()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -72,6 +89,7 @@ fun LessonDetailPage(
     database: AppDatabase,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     var textContent by remember { mutableStateOf<TextContentEntity?>(null) }
     var grammarList by remember { mutableStateOf<List<GrammarEntity>>(emptyList()) }
     var wordList by remember { mutableStateOf<List<WordEntity>>(emptyList()) }
@@ -92,17 +110,6 @@ fun LessonDetailPage(
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("LessonDetail", "课文数据加载失败", e)
-                }
-            }
-            launch {
-                try {
-                    database.grammarDao().getGrammarByLesson(lessonId).first { grammar ->
-                        android.util.Log.d("LessonDetail", "语法数据数量: ${grammar.size}")
-                        grammarList = grammar
-                        true
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("LessonDetail", "语法数据加载失败", e)
                 }
             }
             launch {
@@ -160,7 +167,7 @@ fun LessonDetailPage(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = lessonName,
+                            text = textContent?.courseTitle ?: lessonName,
                             fontSize = 28.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -233,7 +240,10 @@ fun LessonDetailPage(
 
                             // 单词展示按钮
                             IconButton(
-                                onClick = { showWords = !showWords }
+                                onClick = {
+                                    val intent = Intent(context, WordActivity::class.java)
+                                    context.startActivity(intent)
+                                }
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.MenuBook,
@@ -255,7 +265,29 @@ fun LessonDetailPage(
                             contentAlignment = Alignment.Center
                         ) {
                             IconButton(
-                                onClick = { isPlaying = !isPlaying },
+                                onClick = {
+                                    if (isPlaying) {
+                                        // 当前正在播放，点击后停止
+                                        TtsConfig.stop()
+                                        isPlaying = false
+                                    } else {
+                                        // 当前没有播放，点击后开始播放
+                                        textContent?.let { content ->
+                                            val cleanedText = cleanTextContent(content.textContent)
+                                            if (TtsConfig.isInitialized()) {
+                                                isPlaying = true
+                                                TtsConfig.speak(cleanedText, "ja", TtsConfig.VoiceStyles.STYLE_6, 0.7f) { success, error ->
+                                                    if (!success) {
+                                                        android.util.Log.e("LessonDetail", "TTS 播放失败: $error")
+                                                    }
+                                                    isPlaying = false
+                                                }
+                                            } else {
+                                                android.util.Log.e("LessonDetail", "TTS 引擎未初始化")
+                                            }
+                                        }
+                                    }
+                                },
                                 modifier = Modifier.size(48.dp)
                             ) {
                                 Icon(
@@ -298,30 +330,6 @@ fun LessonDetailPage(
                         }
                     }
                 }
-            }
-        }
-
-        // 返回按钮
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(16.dp)
-        ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        Color.White.copy(alpha = 0.3f),
-                                CircleShape
-                            )
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "返回",
-                    tint = Color.White,
-                    modifier = Modifier.size(28.dp)
-                )
             }
         }
     }
@@ -397,14 +405,14 @@ fun ConversationBubble(
                         text = speaker,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = Color.Black,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
                 Text(
                     text = text,
                     fontSize = 16.sp,
-                    color = Color.White,
+                    color = Color.Black,
                     lineHeight = 22.sp
                 )
             }
@@ -592,29 +600,24 @@ fun LessonDetailPagePreview() {
                 }
             }
 
-            // 返回按钮
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(16.dp)
-            ) {
-                IconButton(
-                    onClick = { },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            Color.White.copy(alpha = 0.3f),
-                            CircleShape
-                        )
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "返回",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+        }
+    }
+}
+
+private fun cleanTextContent(text: String): String {
+    val lines = text.split("\n")
+    val cleanedString = StringBuilder()
+    
+    for (line in lines) {
+        val trimmedLine = line.trim()
+        if (trimmedLine.isEmpty()) continue
+        val colonIndex = trimmedLine.indexOf("：")
+        if (colonIndex != -1) {
+            val content = trimmedLine.substring(colonIndex + 1).trim()
+            if (content.isNotEmpty()) {
+               cleanedString.append(content)
             }
         }
     }
+    return cleanedString.toString()
 }

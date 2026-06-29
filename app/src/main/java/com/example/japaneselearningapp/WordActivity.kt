@@ -71,6 +71,22 @@ class WordActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        TtsConfig.initialize(this) { success, error ->
+            if (success) {
+                Log.d(TAG, "TTS 引擎初始化成功")
+            } else {
+                Log.e(TAG, "TTS 引擎初始化失败: $error")
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        TtsConfig.release()
+    }
 }
 
 @Composable
@@ -94,14 +110,16 @@ fun WordListPage(onBack: () -> Unit) {
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 32.dp)
         ) {
             items(allWords) { word ->
                 WordCard(
                     word = word,
                     onLongPress = {
                         if (TtsConfig.isInitialized()) {
-                            TtsConfig.speak(word.wordJp, "ja",STYLE_6, 0.7f) { success, error ->
+                            val cleanedWord = cleanJapaneseWord(word.wordJp)
+                            TtsConfig.speak(cleanedWord, "ja",STYLE_6, 0.7f) { success, error ->
                                 if (!success) {
                                     Log.e("WordActivity", "TTS 播放失败: $error")
                                 }
@@ -147,7 +165,11 @@ fun WordCard(
                 detectTapGestures(
                     onPress = {
                         isPressed = true
-                        tryAwaitRelease()
+                        val released = tryAwaitRelease()
+                        isPressed = false
+                        if (!released) {
+                            return@detectTapGestures
+                        }
                     },
                     onLongPress = {
                         isPressed = false
@@ -194,4 +216,17 @@ fun WordCard(
             }
         }
     }
+}
+private fun cleanJapaneseWord(word: String): String {
+    return word.trim()
+        // 1. 清除开头 [词性] 方括号标注
+        .replace(Regex("^\\[.*?\\]"), "")
+        // 2. 清除首尾波浪号 ~
+        .replace(Regex("^~+|~+$"), "")
+        // 3. 同时匹配半角( 与全角（，删除括号前空格 + 括号及后面所有内容
+        .replace(Regex("\\s*[(（].*"), "")
+        // 4. 清除末尾空格+带圈数字①~⑩
+        .replace(Regex("\\s*[①②③④⑤⑥⑦⑧⑨⑩]$"), "")
+        // 最后清理一遍多余空格
+        .trim()
 }
