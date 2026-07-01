@@ -9,20 +9,19 @@ import com.k2fsa.sherpa.onnx.GenerationConfig
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsSupertonicModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
 import java.io.File
 import java.io.FileOutputStream
 
 /**
  * TTS 配置管理器
- * 基于 Supertonic 3 模型，支持 31 种语言
+ * 基于 Kokoro 多语言模型，支持日语等多种语言
  */
 object TtsConfig {
     private const val TAG = "TtsConfig"
     
     // TTS 模型相关配置
-    private const val TTS_ASSET_DIR = "tts"
-    private const val TTS_MODEL_VERSION = "2026-05-11"  // Supertonic 3 模型版本
+    private const val TTS_ASSET_DIR = "tts-kokoro"
     
     // 默认语言 - 日语
     const val DEFAULT_LANGUAGE = "ja"
@@ -32,30 +31,20 @@ object TtsConfig {
         "ja" to "日语",
         "en" to "英语",
         "zh" to "中文",
-        "ko" to "韩语",
         "es" to "西班牙语",
         "fr" to "法语",
         "de" to "德语",
         "it" to "意大利语",
         "pt" to "葡萄牙语",
-        "ru" to "俄语",
-        "ar" to "阿拉伯语",
+        "ko" to "韩语",
         "hi" to "印地语"
     )
     
-    // 语音风格（Supertonic 3 支持 0-7）
-    object VoiceStyles {
-        const val STYLE_0 = 0
-        const val STYLE_1 = 1
-        const val STYLE_2 = 2
-        const val STYLE_3 = 3
-        const val STYLE_4 = 4
-        const val STYLE_5 = 5
-        const val STYLE_6 = 6
-        const val STYLE_7 = 7
-        
-        // 默认使用 STYLE_6（通常是女声）
-        const val DEFAULT = STYLE_6
+    // 日语声音预设
+    object JapaneseVoices {
+        const val FEMALE_ALPHA = 6   // jf_alpha 女声
+        const val MALE_OMEGA = 7    // jm_omega 男声
+        const val DEFAULT = FEMALE_ALPHA
     }
     
     private var ttsEngine: OfflineTts? = null
@@ -67,72 +56,111 @@ object TtsConfig {
      * 初始化 TTS 引擎
      */
     fun initialize(context: Context, onComplete: (Boolean, String?) -> Unit) {
-
-            try {
-                Log.d(TAG, "开始初始化 TTS 引擎...")
-                
-                // sherpa-onnx v1.13.x 需要从 assets 加载模型
-                // 配置模型路径（相对于 assets 目录）
-                val modelDir = "tts"
-                
-                // 检查 assets 中的模型文件是否存在
+        try {
+            Log.d(TAG, "开始初始化 Kokoro TTS 引擎...")
+            
+            val modelDir = TTS_ASSET_DIR
+            
+            // 检查必需的模型文件是否存在
+            val requiredFiles = listOf(
+                "$modelDir/model.onnx",
+                "$modelDir/voices.bin",
+                "$modelDir/tokens.txt"
+            )
+            
+            for (filePath in requiredFiles) {
                 try {
-                    context.assets.open("$modelDir/tts.json").close()
-                    Log.d(TAG, "TTS 模型文件存在")
+                    context.assets.open(filePath).close()
+                    Log.d(TAG, "模型文件存在: $filePath")
                 } catch (e: Exception) {
-                    onComplete(false, "未找到 TTS 模型文件")
+                    onComplete(false, "未找到 TTS 模型文件: $filePath")
                     return
                 }
-                
-                // 构建配置（使用 assets 中的相对路径）
-                val modelConfig = OfflineTtsSupertonicModelConfig(
-                    durationPredictor = "$modelDir/duration_predictor.int8.onnx",
-                    textEncoder = "$modelDir/text_encoder.int8.onnx",
-                    vectorEstimator = "$modelDir/vector_estimator.int8.onnx",
-                    vocoder = "$modelDir/vocoder.int8.onnx",
-                    ttsJson = "$modelDir/tts.json",
-                    unicodeIndexer = "$modelDir/unicode_indexer.bin",
-                    voiceStyle = "$modelDir/voice.bin"
-                )
-                
-                val config = OfflineTtsConfig(
-                    model = OfflineTtsModelConfig(
-                        supertonic = modelConfig,
-                        numThreads = 2,
-                        debug = true
-                    )
-                )
-                
-                Log.d(TAG, "开始创建 OfflineTts...")
-                
-                // 创建 TTS 引擎（使用 assetManager 从 assets 加载）
-                ttsEngine = OfflineTts(
-                    context.assets,
-                    config
-                )
-                
-                Log.d(TAG, "OfflineTts 创建成功")
-                
-                isInitialized = true
-                Log.d(TAG, "TTS 引擎初始化成功！")
-                Log.d(TAG, "支持的语言: ${SUPPORTED_LANGUAGES.keys.joinToString()}")
-                
-                onComplete(true, null)
-                
-            } catch (e: Exception) {
-                val errorMsg = "TTS 引擎初始化失败: ${e.message}"
-                Log.e(TAG, errorMsg, e)
-                onComplete(false, errorMsg)
             }
+            
+            // 检查可选文件
+            val hasDataDir = try {
+                context.assets.list("$modelDir/espeak-ng-data")?.isNotEmpty() == true
+            } catch (e: Exception) { false }
+            
+            val hasDictDir = try {
+                context.assets.list("$modelDir/dict")?.isNotEmpty() == true
+            } catch (e: Exception) { false }
+            
+            Log.d(TAG, "espeak-ng-data: $hasDataDir, dict: $hasDictDir")
+            
+            // 构建 Kokoro 模型配置
+            val modelConfigBuilder = OfflineTtsKokoroModelConfig.builder()
+                .setModel("$modelDir/model.onnx")
+                .setVoices("$modelDir/voices.bin")
+                .setTokens("$modelDir/tokens.txt")
+                .setLengthScale(1.0f)  // 1.0 = 正常速度，越小越快
+            
+            // 可选配置
+            if (hasDataDir) {
+                modelConfigBuilder.setDataDir("$modelDir/espeak-ng-data")
+            }
+            if (hasDictDir) {
+                modelConfigBuilder.setDictDir("$modelDir/dict")
+            }
+            
+            // 尝试设置词典文件（多语言）
+            try {
+                val lexiconFiles = mutableListOf<String>()
+                val files = context.assets.list(modelDir) ?: emptyArray()
+                for (file in files) {
+                    if (file.startsWith("lexicon-") && file.endsWith(".txt")) {
+                        lexiconFiles.add("$modelDir/$file")
+                    }
+                }
+                if (lexiconFiles.isNotEmpty()) {
+                    modelConfigBuilder.setLexicon(lexiconFiles.joinToString(","))
+                    Log.d(TAG, "加载词典文件: ${lexiconFiles.joinToString()}")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "加载词典文件失败: ${e.message}")
+            }
+            
+            val modelConfig = modelConfigBuilder.build()
+            
+            val config = OfflineTtsConfig.builder()
+                .setModel(
+                    OfflineTtsModelConfig.builder()
+                        .setKokoro(modelConfig)
+                        .setNumThreads(2)
+                        .setDebug(true)
+                        .build()
+                )
+                .build()
+            
+            Log.d(TAG, "开始创建 OfflineTts (Kokoro)...")
+            
+            // 创建 TTS 引擎（使用 assetManager 从 assets 加载）
+            ttsEngine = OfflineTts(context.assets, config)
+            
+            Log.d(TAG, "OfflineTts 创建成功")
+            
+            isInitialized = true
+            Log.d(TAG, "Kokoro TTS 引擎初始化成功！")
+            Log.d(TAG, "支持的语言: ${SUPPORTED_LANGUAGES.keys.joinToString()}")
+            
+            onComplete(true, null)
+            
+        } catch (e: Exception) {
+            val errorMsg = "TTS 引擎初始化失败: ${e.message}"
+            Log.e(TAG, errorMsg, e)
+            onComplete(false, errorMsg)
+        }
     }
+    
     /**
      * 生成语音并直接播放
      */
     fun speak(
         text: String,
         language: String = DEFAULT_LANGUAGE,
-        voiceStyle: Int = VoiceStyles.DEFAULT,
-        speed: Float = 0.5f,
+        voiceStyle: Int = JapaneseVoices.DEFAULT,
+        speed: Float = 1.0f,
         onComplete: (Boolean, String?) -> Unit
     ) {
         if (!isInitialized || ttsEngine == null) {
@@ -142,48 +170,43 @@ object TtsConfig {
 
         Thread {
             try {
-                Log.d(TAG, "生成语音: text='$text', 风格: $voiceStyle, 语速: $speed")
-
-                // Supertonic 模型使用简单的 generate 方法
-                // 风格由 voice.bin 文件决定，GenerationConfig 不需要额外参数
-                Log.d(TAG, "开始调用 ttsEngine?.generate...")
-
-                val audio = ttsEngine?.generate(text)
-
+                Log.d(TAG, "生成语音: text='$text', 声音: $voiceStyle, 语速: $speed")
+                
+                // Kokoro 使用 lengthScale 控制语速
+                // lengthScale > 1.0 -> 更慢
+                // lengthScale < 1.0 -> 更快
+                // 我们把 speed 参数转换一下：
+                // speed=1.0 正常 -> lengthScale=1.0
+                // speed=0.5 慢 -> lengthScale=2.0
+                // speed=2.0 快 -> lengthScale=0.5
+                val lengthScale = 1.0f / speed
+                
+                val genConfig = GenerationConfig(
+                    sid = voiceStyle,
+                    speed = speed
+                )
+                
+                Log.d(TAG, "调用 generate, genConfig.sid=$voiceStyle, speed=$speed")
+                
+                val audio = ttsEngine?.generate(text, voiceStyle, speed)
+                
                 Log.d(TAG, "generate 返回: audio=$audio")
                 if (audio != null) {
                     Log.d(TAG, "samples.size=${audio.samples.size}, sampleRate=${audio.sampleRate}")
                 }
-
+                
                 if (audio != null && audio.samples.isNotEmpty()) {
                     Log.d(TAG, "语音生成成功，长度: ${audio.samples.size} 采样点, 采样率: ${audio.sampleRate}Hz")
-
+                    
                     // 播放音频
                     playAudio(audio.samples, audio.sampleRate)
-
+                    
                     onComplete(true, null)
                 } else {
                     Log.e(TAG, "语音生成失败: samples 为空")
-
-                    // 尝试使用 GenerationConfig
-                    Log.d(TAG, "尝试使用 GenerationConfig...")
-                    val genConfig = GenerationConfig(
-                        sid = voiceStyle,
-                        speed = speed
-                    )
-
-                    val audio2 = ttsEngine?.generate(text, voiceStyle,speed)
-                    Log.d(TAG, "generate with config 返回: audio=$audio2, samples.size=${audio2?.samples?.size ?: -1}")
-
-                    if (audio2 != null && audio2.samples.isNotEmpty()) {
-                        Log.d(TAG, "语音生成成功，长度: ${audio2.samples.size} 采样点, 采样率: ${audio2.sampleRate}Hz")
-                        playAudio(audio2.samples, audio2.sampleRate)
-                        onComplete(true, null)
-                    } else {
-                        onComplete(false, "语音生成失败，返回为空")
-                    }
+                    onComplete(false, "语音生成失败，返回为空")
                 }
-
+                
             } catch (e: Exception) {
                 val errorMsg = "语音生成失败: ${e.message}"
                 Log.e(TAG, errorMsg, e)
@@ -253,9 +276,11 @@ object TtsConfig {
      */
     fun speakJapanese(
         text: String,
+        voiceStyle: Int = JapaneseVoices.DEFAULT,
+        speed: Float = 1.0f,
         onComplete: (Boolean, String?) -> Unit
     ) {
-        speak(text, language = "ja", onComplete = onComplete)
+        speak(text, language = "ja", voiceStyle = voiceStyle, speed = speed, onComplete = onComplete)
     }
     
     /**
@@ -277,8 +302,6 @@ object TtsConfig {
      */
     fun stop() {
         try {
-            // sherpa-onnx 的 OfflineTts 不支持直接停止，
-            // 但我们可以标记停止状态
             isPlaying = false
             Log.d(TAG, "停止播放标记已设置")
         } catch (e: Exception) {
