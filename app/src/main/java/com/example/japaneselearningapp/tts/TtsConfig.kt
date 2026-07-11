@@ -100,10 +100,14 @@ object TtsConfig {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 Log.d(TAG, "生成语音: text='$text', 声音: $voiceStyle, 语速: $speed")
-                
+
                 ttsEngine?.setAudioLengthScale(1.0f / speed)
-                
+
+                Log.d(TAG, "开始推理（首次推理可能需要 30~120 秒，请耐心等待）...")
+                val inferStartTime = System.currentTimeMillis()
                 val result = ttsEngine?.infer(text, voiceStyle)
+                val inferDuration = System.currentTimeMillis() - inferStartTime
+                Log.d(TAG, "推理完成，耗时: ${inferDuration}ms, 结果: ${result != null}")
                 
                 Log.d(TAG, "infer 返回: $result")
                 if (result != null && result.first != null && result.first!!.isNotEmpty()) {
