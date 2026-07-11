@@ -7,13 +7,3 @@ plugins {
     id("com.google.devtools.ksp") version "2.0.21-1.0.25" apply false
 }
 
-allprojects {
-    repositories {
-        maven {
-            url = uri("${System.getProperty("user.home")}/.m2/repository")
-        }
-        mavenCentral()
-        google()
-        maven { url = uri("https://jitpack.io") }
-    }
-}
