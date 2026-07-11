@@ -31,13 +31,16 @@ object TtsConfig {
     }
     
     object ChineseVoices {
-        const val CHARACTER_A = "八重神子_ZH"
-        const val CHARACTER_B = "阿米娅_ZH"
+        const val CHARACTER_A = "陈_ZH"
+        const val CHARACTER_B = "珐露珊_ZH"
+        const val CHARACTER_C = "甘雨_ZH"
         const val DEFAULT = CHARACTER_A
     }
     
     object EnglishVoices {
-        const val CHARACTER_A = "1999_EN"
+        const val CHARACTER_A = "APPLe_EN"
+        const val CHARACTER_B = "Sonetto_EN"
+        const val CHARACTER_C = "Vertin_EN"
         const val DEFAULT = CHARACTER_A
     }
     
