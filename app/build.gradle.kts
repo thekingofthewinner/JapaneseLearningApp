@@ -61,6 +61,7 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.activity:activity-compose:1.8.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -70,8 +71,10 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
-    // Sherpa-ONNX 安卓库（通过 JitPack 获取）
-    implementation("com.github.k2-fsa:sherpa-onnx:v1.13.1")
+    // Bert-VITS2-MNN 安卓库
+    implementation("com.example.bertvits2mnn:bertvits2-infer-wrapper:2.0.0")
+    implementation("com.example.bertvits2mnn:text-preprocess:2.0.0")
+    implementation("com.example.bertvits2mnn:bertvits2-jni:2.0.0")
     // OkHttp 网络库（支持 HTTP 和 SSE 流式）
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")
