@@ -63,6 +63,7 @@ object TtsConfig {
                     withContext(Dispatchers.Main) {
                         onComplete(true, null)
                     }
+                    isInitialized = true
                 } else {
                     Log.e(TAG, "Bert-VITS2-MNN 引擎初始化失败")
                     ttsEngine = null

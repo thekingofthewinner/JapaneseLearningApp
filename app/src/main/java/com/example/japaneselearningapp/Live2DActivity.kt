@@ -13,7 +13,6 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.japaneselearningapp.asr.AsrConfig
 import com.example.japaneselearningapp.asr.AudioRecorder
 import com.example.japaneselearningapp.network.MockApiService
 import com.example.japaneselearningapp.tts.TtsConfig
@@ -159,24 +158,24 @@ class Live2DActivity : AppCompatActivity() {
         startConversation()
     }
 
-    private fun initializeAsr() {
-        AsrConfig.initialize(this) { asrSuccess, asrError ->
-            runOnUiThread {
-                if (asrSuccess) {
-                    Log.d(TAG, "ASR 引擎初始化成功")
-                } else {
-                    Log.e(TAG, "ASR 引擎初始化失败: $asrError")
-                    Toast.makeText(this, "ASR 初始化失败，语音功能不可用", Toast.LENGTH_SHORT).show()
-                    // ASR失败时禁用麦克风按钮
-                    micButton.isEnabled = false
-                    micButton.alpha = 0.5f
-                }
-                
-                // 无论ASR是否成功，都显示欢迎界面
-                startConversation()
-            }
-        }
-    }
+//    private fun initializeAsr() {
+//        AsrConfig.initialize(this) { asrSuccess, asrError ->
+//            runOnUiThread {
+//                if (asrSuccess) {
+//                    Log.d(TAG, "ASR 引擎初始化成功")
+//                } else {
+//                    Log.e(TAG, "ASR 引擎初始化失败: $asrError")
+//                    Toast.makeText(this, "ASR 初始化失败，语音功能不可用", Toast.LENGTH_SHORT).show()
+//                    // ASR失败时禁用麦克风按钮
+//                    micButton.isEnabled = false
+//                    micButton.alpha = 0.5f
+//                }
+//
+//                // 无论ASR是否成功，都显示欢迎界面
+//                startConversation()
+//            }
+//        }
+//    }
 
     /**
      * 开始对话
@@ -185,10 +184,6 @@ class Live2DActivity : AppCompatActivity() {
         // 播放欢迎语（如果TTS可用）
         if (TtsConfig.isInitialized()) {
             speakText("こんにちは！私は AI アシスタントの春です。いつも画面の前の皆さんとお話できるのを楽しみに待っています。日常のちょっとした雑談はもちろん、疑問の解決や知りたい情報の調べ、気分転換のお喋りまで、どんな小さなことでも気軽に話しかけてください。あなたの言葉をしっかり受け止めて、優しくお返事いたします。", "ja") {
-                // 欢迎语播放完成后，如果ASR可用则开始监听
-                if (AsrConfig.isInitialized()) {
-                    startListening()
-                }
             }
         } else {
             // TTS不可用时，直接显示文字提示
@@ -212,47 +207,7 @@ class Live2DActivity : AppCompatActivity() {
         audioRecorder.startRecording(object : AudioRecorder.AudioCallback {
             override fun onAudioData(data: FloatArray) {
                 if (!isProcessing.get() && !isMuted) {
-                    // 使用 VAD + ASR 进行语音识别
-                    AsrConfig.startRecognitionWithVad(data, object : AsrConfig.RecognitionCallback {
-                        override fun onPartialResult(text: String) {
-                            runOnUiThread {
-                                updateVoiceStatus(VoiceStatus.SPEAKING_USER)
-                            }
-                        }
 
-                        override fun onFinalResult(text: String, language: String) {
-                            runOnUiThread {
-                                isListening.set(false)
-                                updateVoiceStatus(VoiceStatus.PROCESSING)
-
-                                if (text.isNotEmpty()) {
-                                    handleUserInput(text, language)
-                                } else {
-                                    startListening()
-                                }
-                            }
-                        }
-
-                        override fun onError(error: String) {
-                            runOnUiThread {
-                                Log.e(TAG, "ASR 错误: $error")
-                                isListening.set(false)
-                                startListening()
-                            }
-                        }
-
-                        override fun onSpeechStart() {
-                            runOnUiThread {
-                                updateVoiceStatus(VoiceStatus.SPEAKING_USER)
-                            }
-                        }
-
-                        override fun onSpeechEnd() {
-                            runOnUiThread {
-                                updateVoiceStatus(VoiceStatus.PROCESSING)
-                            }
-                        }
-                    })
                 }
             }
 
@@ -497,7 +452,6 @@ class Live2DActivity : AppCompatActivity() {
         }
         
         // 释放 ASR 和 TTS 引擎
-        AsrConfig.release()
         TtsConfig.release()
         MockApiService.shutdown()
     }
