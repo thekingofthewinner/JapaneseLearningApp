@@ -13,20 +13,13 @@ import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
 import java.io.File
 import java.io.FileOutputStream
 
-/**
- * TTS 配置管理器
- * 基于 Kokoro 多语言模型，支持日语等多种语言
- */
 object TtsConfig {
     private const val TAG = "TtsConfig"
     
-    // TTS 模型相关配置
     private const val TTS_ASSET_DIR = "ttsKokoro"
     
-    // 默认语言 - 日语
     const val DEFAULT_LANGUAGE = "ja"
     
-    // 支持的语言列表
     val SUPPORTED_LANGUAGES = mapOf(
         "ja" to "日语",
         "en" to "英语",
@@ -40,32 +33,29 @@ object TtsConfig {
         "hi" to "印地语"
     )
     
-    // 日语声音预设
     object JapaneseVoices {
-        const val FEMALE_ALPHA = 6   // jf_alpha 女声
-        const val MALE_OMEGA = 7    // jm_omega 男声
+        const val FEMALE_ALPHA = 6
+        const val MALE_OMEGA = 7
         const val DEFAULT = FEMALE_ALPHA
     }
     
     private var ttsEngine: OfflineTts? = null
     private var isInitialized = false
     private var isPlaying = false
-    private var modelDir: String = ""
     
-    /**
-     * 初始化 TTS 引擎
-     */
     fun initialize(context: Context, onComplete: (Boolean, String?) -> Unit) {
         try {
             Log.d(TAG, "开始初始化 Kokoro TTS 引擎...")
             
-            val modelDir = TTS_ASSET_DIR
+            val filesDir = context.filesDir
+            val destDir = File(filesDir, TTS_ASSET_DIR)
             
-            // 检查必需的模型文件是否存在
+            Log.d(TAG, "目标目录: ${destDir.absolutePath}")
+            
             val requiredFiles = listOf(
-                "$modelDir/model.int8.onnx",
-                "$modelDir/voices.bin",
-                "$modelDir/tokens.txt"
+                "$TTS_ASSET_DIR/model.int8.onnx",
+                "$TTS_ASSET_DIR/voices.bin",
+                "$TTS_ASSET_DIR/tokens.txt"
             )
             
             for (filePath in requiredFiles) {
@@ -78,24 +68,40 @@ object TtsConfig {
                 }
             }
             
-            // 检查可选文件
             val hasDataDir = try {
-                context.assets.list("$modelDir/espeak-ng-data")?.isNotEmpty() == true
+                context.assets.list("$TTS_ASSET_DIR/espeak-ng-data")?.isNotEmpty() == true
             } catch (e: Exception) { false }
             
             val hasDictDir = try {
-                context.assets.list("$modelDir/dict")?.isNotEmpty() == true
+                context.assets.list("$TTS_ASSET_DIR/dict")?.isNotEmpty() == true
             } catch (e: Exception) { false }
             
             Log.d(TAG, "espeak-ng-data: $hasDataDir, dict: $hasDictDir")
             
+            var dataDirPath = ""
+            var dictDirPath = ""
+            
+            if (hasDataDir) {
+                val dataDestDir = File(destDir, "espeak-ng-data")
+                copyAssetDir(context, "$TTS_ASSET_DIR/espeak-ng-data", dataDestDir)
+                dataDirPath = dataDestDir.absolutePath
+                Log.d(TAG, "espeak-ng-data 复制完成: $dataDirPath")
+            }
+            
+            if (hasDictDir) {
+                val dictDestDir = File(destDir, "dict")
+                copyAssetDir(context, "$TTS_ASSET_DIR/dict", dictDestDir)
+                dictDirPath = dictDestDir.absolutePath
+                Log.d(TAG, "dict 复制完成: $dictDirPath")
+            }
+            
             val modelConfig = OfflineTtsKokoroModelConfig(
-                model = "$modelDir/model.int8.onnx",
-                voices = "$modelDir/voices.bin",
-                tokens = "$modelDir/tokens.txt",
+                model = "$TTS_ASSET_DIR/model.int8.onnx",
+                voices = "$TTS_ASSET_DIR/voices.bin",
+                tokens = "$TTS_ASSET_DIR/tokens.txt",
                 lengthScale = 1.0f,
-                dataDir = if (hasDataDir) "$modelDir/espeak-ng-data" else "",
-                dictDir = if (hasDictDir) "$modelDir/dict" else ""
+                dataDir = dataDirPath,
+                dictDir = dictDirPath
             )
             
             val config = OfflineTtsConfig(
@@ -107,11 +113,32 @@ object TtsConfig {
             )
             
             Log.d(TAG, "开始创建 OfflineTts (Kokoro)...")
+            Log.d(TAG, "model=$TTS_ASSET_DIR/model.int8.onnx")
+            Log.d(TAG, "dataDir=$dataDirPath")
+            Log.d(TAG, "dictDir=$dictDirPath")
             
-            // 创建 TTS 引擎（使用 assetManager 从 assets 加载）
-            ttsEngine = OfflineTts(context.assets, config)
+            try {
+                System.loadLibrary("sherpa-onnx-jni")
+                Log.d(TAG, "sherpa-onnx native 库加载成功")
+            } catch (e: UnsatisfiedLinkError) {
+                Log.e(TAG, "sherpa-onnx native 库加载失败", e)
+                onComplete(false, "Native 库加载失败: ${e.message}")
+                return
+            }
             
-            Log.d(TAG, "OfflineTts 创建成功")
+            try {
+                ttsEngine = OfflineTts(context.assets, config)
+                Log.d(TAG, "OfflineTts 创建成功")
+            } catch (e: Throwable) {
+                val errorMsg = "创建 OfflineTts 失败: ${e.message}\n模型文件可能损坏或不兼容"
+                Log.e(TAG, errorMsg, e)
+                if (e is UnsatisfiedLinkError) {
+                    Log.e(TAG, "Native 库加载失败！请检查 .so 文件是否正确打包", e)
+                }
+                ttsEngine = null
+                onComplete(false, errorMsg)
+                return
+            }
             
             isInitialized = true
             Log.d(TAG, "Kokoro TTS 引擎初始化成功！")
@@ -126,9 +153,43 @@ object TtsConfig {
         }
     }
     
-    /**
-     * 生成语音并直接播放
-     */
+    private fun copyAssetDir(context: Context, assetPath: String, destDir: File) {
+        try {
+            if (destDir.exists()) {
+                Log.d(TAG, "目标目录已存在，跳过复制: ${destDir.absolutePath}")
+                return
+            }
+            
+            destDir.mkdirs()
+            
+            val files = context.assets.list(assetPath) ?: return
+            
+            for (file in files) {
+                val sourcePath = "$assetPath/$file"
+                val destFile = File(destDir, file)
+                
+                try {
+                    val subFiles = context.assets.list(sourcePath)
+                    if (subFiles != null && subFiles.isNotEmpty()) {
+                        copyAssetDir(context, sourcePath, destFile)
+                    } else {
+                        context.assets.open(sourcePath).use { inputStream ->
+                            FileOutputStream(destFile).use { outputStream ->
+                                inputStream.copyTo(outputStream)
+                            }
+                        }
+                        Log.d(TAG, "复制文件: $sourcePath -> ${destFile.absolutePath}")
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "复制文件失败: $sourcePath", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "复制目录失败: $assetPath", e)
+            throw e
+        }
+    }
+    
     fun speak(
         text: String,
         language: String = DEFAULT_LANGUAGE,
@@ -145,13 +206,6 @@ object TtsConfig {
             try {
                 Log.d(TAG, "生成语音: text='$text', 声音: $voiceStyle, 语速: $speed")
                 
-                // Kokoro 使用 lengthScale 控制语速
-                // lengthScale > 1.0 -> 更慢
-                // lengthScale < 1.0 -> 更快
-                // 我们把 speed 参数转换一下：
-                // speed=1.0 正常 -> lengthScale=1.0
-                // speed=0.5 慢 -> lengthScale=2.0
-                // speed=2.0 快 -> lengthScale=0.5
                 val lengthScale = 1.0f / speed
                 
                 val genConfig = GenerationConfig(
@@ -171,7 +225,6 @@ object TtsConfig {
                 if (audio != null && audio.samples.isNotEmpty()) {
                     Log.d(TAG, "语音生成成功，长度: ${audio.samples.size} 采样点, 采样率: ${audio.sampleRate}Hz")
                     
-                    // 播放音频
                     playAudio(audio.samples, audio.sampleRate)
                     
                     onComplete(true, null)
@@ -188,9 +241,6 @@ object TtsConfig {
         }.start()
     }
     
-    /**
-     * 播放音频数据
-     */
     private fun playAudio(samples: FloatArray, sampleRate: Int) {
         try {
             val bufferSize = AudioTrack.getMinBufferSize(
@@ -219,14 +269,12 @@ object TtsConfig {
             
             audioTrack.play()
             
-            // 将 Float 转换为 Short (16-bit PCM)
             val shortBuffer = ShortArray(samples.size)
             for (i in samples.indices) {
                 val sample = (samples[i] * Short.MAX_VALUE).toInt()
                 shortBuffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
             }
             
-            // 分块写入
             var offset = 0
             while (offset < shortBuffer.size) {
                 val length = minOf(bufferSize / 2, shortBuffer.size - offset)
@@ -244,9 +292,6 @@ object TtsConfig {
         }
     }
     
-    /**
-     * 生成日语语音（快捷方法）
-     */
     fun speakJapanese(
         text: String,
         voiceStyle: Int = JapaneseVoices.DEFAULT,
@@ -256,9 +301,6 @@ object TtsConfig {
         speak(text, language = "ja", voiceStyle = voiceStyle, speed = speed, onComplete = onComplete)
     }
     
-    /**
-     * 释放 TTS 资源
-     */
     fun release() {
         try {
             ttsEngine?.release()
@@ -270,9 +312,6 @@ object TtsConfig {
         }
     }
     
-    /**
-     * 停止播放
-     */
     fun stop() {
         try {
             isPlaying = false
@@ -282,8 +321,5 @@ object TtsConfig {
         }
     }
     
-    /**
-     * 检查是否已初始化
-     */
     fun isInitialized(): Boolean = isInitialized
 }
