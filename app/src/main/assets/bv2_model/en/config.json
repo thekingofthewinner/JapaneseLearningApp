@@ -1,0 +1,11 @@
+{
+  "data": {
+    "sampling_rate": 44100,
+    "spk2id": {
+      "APPLe_EN": 0,
+      "Sonetto_EN": 1,
+      "Vertin_EN": 2
+    }
+  },
+  "version": "2.3"
+}
