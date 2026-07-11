@@ -21,7 +21,7 @@ object TtsConfig {
     private const val TAG = "TtsConfig"
     
     // TTS 模型相关配置
-    private const val TTS_ASSET_DIR = "tts-kokoro"
+    private const val TTS_ASSET_DIR = "ttsKokoro"
     
     // 默认语言 - 日语
     const val DEFAULT_LANGUAGE = "ja"
@@ -63,7 +63,7 @@ object TtsConfig {
             
             // 检查必需的模型文件是否存在
             val requiredFiles = listOf(
-                "$modelDir/model.onnx",
+                "$modelDir/model.int8.onnx",
                 "$modelDir/voices.bin",
                 "$modelDir/tokens.txt"
             )
@@ -89,49 +89,22 @@ object TtsConfig {
             
             Log.d(TAG, "espeak-ng-data: $hasDataDir, dict: $hasDictDir")
             
-            // 构建 Kokoro 模型配置
-            val modelConfigBuilder = OfflineTtsKokoroModelConfig.builder()
-                .setModel("$modelDir/model.onnx")
-                .setVoices("$modelDir/voices.bin")
-                .setTokens("$modelDir/tokens.txt")
-                .setLengthScale(1.0f)  // 1.0 = 正常速度，越小越快
+            val modelConfig = OfflineTtsKokoroModelConfig(
+                model = "$modelDir/model.int8.onnx",
+                voices = "$modelDir/voices.bin",
+                tokens = "$modelDir/tokens.txt",
+                lengthScale = 1.0f,
+                dataDir = if (hasDataDir) "$modelDir/espeak-ng-data" else "",
+                dictDir = if (hasDictDir) "$modelDir/dict" else ""
+            )
             
-            // 可选配置
-            if (hasDataDir) {
-                modelConfigBuilder.setDataDir("$modelDir/espeak-ng-data")
-            }
-            if (hasDictDir) {
-                modelConfigBuilder.setDictDir("$modelDir/dict")
-            }
-            
-            // 尝试设置词典文件（多语言）
-            try {
-                val lexiconFiles = mutableListOf<String>()
-                val files = context.assets.list(modelDir) ?: emptyArray()
-                for (file in files) {
-                    if (file.startsWith("lexicon-") && file.endsWith(".txt")) {
-                        lexiconFiles.add("$modelDir/$file")
-                    }
-                }
-                if (lexiconFiles.isNotEmpty()) {
-                    modelConfigBuilder.setLexicon(lexiconFiles.joinToString(","))
-                    Log.d(TAG, "加载词典文件: ${lexiconFiles.joinToString()}")
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "加载词典文件失败: ${e.message}")
-            }
-            
-            val modelConfig = modelConfigBuilder.build()
-            
-            val config = OfflineTtsConfig.builder()
-                .setModel(
-                    OfflineTtsModelConfig.builder()
-                        .setKokoro(modelConfig)
-                        .setNumThreads(2)
-                        .setDebug(true)
-                        .build()
+            val config = OfflineTtsConfig(
+                model = OfflineTtsModelConfig(
+                    kokoro = modelConfig,
+                    numThreads = 2,
+                    debug = true
                 )
-                .build()
+            )
             
             Log.d(TAG, "开始创建 OfflineTts (Kokoro)...")
             

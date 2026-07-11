@@ -2,8 +2,11 @@ package com.example.japaneselearningapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,9 +35,22 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import com.example.japaneselearningapp.tts.TtsConfig
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            TtsConfig.initialize(this@MainActivity) { success, error ->
+                if (success) {
+                    Log.d("MainActivity", "TTS 引擎初始化成功")
+                } else {
+                    Log.e("MainActivity", "TTS 引擎初始化失败: $error")
+                }
+            }
+        }
+
         setContent {
             JapaneseLearningAppTheme {
                 Surface(

@@ -46,7 +46,7 @@ object TtsExample {
         TtsConfig.speak(
             text = text,
             language = language,
-            voiceStyle = TtsConfig.VoiceStyles.DEFAULT,
+            voiceStyle = TtsConfig.JapaneseVoices.FEMALE_ALPHA,
             speed = 1.0f
         ) { success, error ->
             if (success) {
@@ -65,7 +65,7 @@ object TtsExample {
         TtsConfig.speak(
             text = text,
             language = TtsConfig.DEFAULT_LANGUAGE,
-            voiceStyle = TtsConfig.VoiceStyles.DEFAULT,
+            voiceStyle = TtsConfig.JapaneseVoices.FEMALE_ALPHA,
             speed = speed
         ) { success, error ->
             if (success) {

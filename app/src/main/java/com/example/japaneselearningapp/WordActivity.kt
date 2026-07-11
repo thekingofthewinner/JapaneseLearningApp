@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import com.example.japaneselearningapp.data.AppDatabase
 import com.example.japaneselearningapp.data.entity.WordEntity
 import com.example.japaneselearningapp.tts.TtsConfig
-import com.example.japaneselearningapp.tts.TtsConfig.VoiceStyles.STYLE_6
 import com.example.japaneselearningapp.ui.theme.JapaneseLearningAppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +57,8 @@ class WordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val lessonId = intent.getIntExtra("LESSON_ID", 1)
+
         setContent {
             JapaneseLearningAppTheme {
                 Surface(
@@ -65,35 +66,20 @@ class WordActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     WordListPage(
+                        lessonId = lessonId,
                         onBack = { finish() }
                     )
                 }
             }
         }
     }
-
-    override fun onStart() {
-        super.onStart()
-        TtsConfig.initialize(this) { success, error ->
-            if (success) {
-                Log.d(TAG, "TTS 引擎初始化成功")
-            } else {
-                Log.e(TAG, "TTS 引擎初始化失败: $error")
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        TtsConfig.release()
-    }
 }
 
 @Composable
-fun WordListPage(onBack: () -> Unit) {
+fun WordListPage(lessonId: Int, onBack: () -> Unit) {
     val context = LocalContext.current
     val database = remember { AppDatabase.getInstance(context) }
-    val allWords by database.wordDao().getAllWords().collectAsState(initial = emptyList())
+    val allWords by database.wordDao().getWordsByLesson(lessonId).collectAsState(initial = emptyList())
 
     Box(
         modifier = Modifier
@@ -119,7 +105,7 @@ fun WordListPage(onBack: () -> Unit) {
                     onLongPress = {
                         if (TtsConfig.isInitialized()) {
                             val cleanedWord = cleanJapaneseWord(word.wordJp)
-                            TtsConfig.speak(cleanedWord, "ja",STYLE_6, 0.7f) { success, error ->
+                            TtsConfig.speak(cleanedWord, "ja", TtsConfig.JapaneseVoices.FEMALE_ALPHA, 0.7f) { success, error ->
                                 if (!success) {
                                     Log.e("WordActivity", "TTS 播放失败: $error")
                                 }

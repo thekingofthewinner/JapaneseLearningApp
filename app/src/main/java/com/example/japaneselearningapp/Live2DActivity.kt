@@ -17,7 +17,6 @@ import com.example.japaneselearningapp.asr.AsrConfig
 import com.example.japaneselearningapp.asr.AudioRecorder
 import com.example.japaneselearningapp.network.MockApiService
 import com.example.japaneselearningapp.tts.TtsConfig
-import com.example.japaneselearningapp.tts.TtsConfig.VoiceStyles
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -139,30 +138,25 @@ class Live2DActivity : AppCompatActivity() {
     }
 
     private fun initializeEngines() {
-        // 先显示Live2D模型，然后异步初始化引擎
-        Log.d(TAG, "初始化引擎...")
+        Log.d(TAG, "检查引擎状态...")
 
-        // 初始化 TTS
-        TtsConfig.initialize(this) { ttsSuccess, ttsError ->
-            runOnUiThread {
-                if (ttsSuccess) {
-                    Log.d(TAG, "TTS 引擎初始化成功")
-                } else {
-                    Log.e(TAG, "TTS 引擎初始化失败: $ttsError")
-                    Toast.makeText(this, "TTS 初始化失败，将使用文字模式", Toast.LENGTH_SHORT).show()
-                }
-
-                // 暂时跳过 ASR 初始化（模型文件损坏）
-                // TODO: 下载正确的 ASR 模型后恢复
-                /*
-                initializeAsr()
-                */
-                // 直接显示欢迎界面
-                micButton.isEnabled = false
-                micButton.alpha = 0.5f
-                startConversation()
-            }
+        // TTS 已在 MainActivity 中初始化，直接检查状态
+        if (TtsConfig.isInitialized()) {
+            Log.d(TAG, "TTS 引擎已就绪")
+        } else {
+            Log.e(TAG, "TTS 引擎未初始化")
+            Toast.makeText(this, "TTS 引擎未初始化，将使用文字模式", Toast.LENGTH_SHORT).show()
         }
+
+        // 暂时跳过 ASR 初始化（模型文件损坏）
+        // TODO: 下载正确的 ASR 模型后恢复
+        /*
+        initializeAsr()
+        */
+        // 直接显示欢迎界面
+        micButton.isEnabled = false
+        micButton.alpha = 0.5f
+        startConversation()
     }
 
     private fun initializeAsr() {
@@ -315,7 +309,7 @@ class Live2DActivity : AppCompatActivity() {
         TtsConfig.speak(
             text = text,
             language = language,
-            voiceStyle = VoiceStyles.STYLE_5,
+            voiceStyle = TtsConfig.JapaneseVoices.FEMALE_ALPHA,
             speed = 0.5f  // 降低语速，0.5-0.7 比较自然
         ) { success, error ->
             isSpeaking.set(false)

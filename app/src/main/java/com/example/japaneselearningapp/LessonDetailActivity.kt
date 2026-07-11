@@ -40,21 +40,7 @@ import kotlinx.coroutines.launch
 class LessonDetailActivity : ComponentActivity() {
 
     private lateinit var database: AppDatabase
-    override fun onStart() {
-        super.onStart()
-        TtsConfig.initialize(this) { success, error ->
-            if (success) {
-                Log.d("LessonDetailActivity", "TTS 引擎初始化成功")
-            } else {
-                Log.e("LessonDetailActivity", "TTS 引擎初始化失败: $error")
-            }
-        }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        TtsConfig.release()
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -242,6 +228,7 @@ fun LessonDetailPage(
                             IconButton(
                                 onClick = {
                                     val intent = Intent(context, WordActivity::class.java)
+                                    intent.putExtra("LESSON_ID", lessonId)
                                     context.startActivity(intent)
                                 }
                             ) {
@@ -276,7 +263,7 @@ fun LessonDetailPage(
                                             val cleanedText = cleanTextContent(content.textContent)
                                             if (TtsConfig.isInitialized()) {
                                                 isPlaying = true
-                                                TtsConfig.speak(cleanedText, "ja", TtsConfig.VoiceStyles.STYLE_6, 0.7f) { success, error ->
+                                                TtsConfig.speak(cleanedText, "ja", TtsConfig.JapaneseVoices.FEMALE_ALPHA, 0.7f) { success, error ->
                                                     if (!success) {
                                                         android.util.Log.e("LessonDetail", "TTS 播放失败: $error")
                                                     }
