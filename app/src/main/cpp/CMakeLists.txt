@@ -85,6 +85,13 @@ target_link_options(${APP_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
 
 # ============ VoiceVox JNI 库 ============
 
+add_library(voicevox_core SHARED IMPORTED)
+set_target_properties(voicevox_core
+  PROPERTIES
+    IMPORTED_LOCATION
+      ${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libvoicevox_core.so
+)
+
 add_library(voicevox_jni SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/voicevox/voicevox_jni.cpp
 )
@@ -95,6 +102,7 @@ find_library(log-lib log)
 find_library(android-lib android)
 
 target_link_libraries(voicevox_jni
+  voicevox_core
   ${log-lib}
   ${android-lib}
 )
