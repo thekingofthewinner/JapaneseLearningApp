@@ -82,3 +82,19 @@ target_include_directories(${APP_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Android 16KB page-size 选项
 target_link_options(${APP_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
+
+# ============ VoiceVox JNI 库 ============
+
+add_library(voicevox_jni SHARED
+  ${CMAKE_CURRENT_SOURCE_DIR}/voicevox/voicevox_jni.cpp
+)
+
+target_include_directories(voicevox_jni PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+find_library(log-lib log)
+find_library(android-lib android)
+
+target_link_libraries(voicevox_jni
+  ${log-lib}
+  ${android-lib}
+)

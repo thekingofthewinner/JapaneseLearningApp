@@ -24,6 +24,11 @@ android {
             // 主流手机只保留 arm64-v8a，体积更小
             abiFilters += listOf("arm64-v8a")
         }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DANDROID_STL=c++_shared")
+            }
+        }
     }
 
     externalNativeBuild {
@@ -53,7 +58,7 @@ android {
     // 告诉 Gradle 去哪里找 Live2D 的 .so 库
     sourceSets {
         getByName("main") {
-            jniLibs.srcDirs("libs")
+            jniLibs.srcDirs("libs", "src/main/jniLibs")
         }
     }
 }
