@@ -8,7 +8,7 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 static VoicevoxSynthesizer* synthesizer = nullptr;
-static VoicevoxOnnxruntime* onnxruntime = nullptr;
+static const VoicevoxOnnxruntime* onnxruntime = nullptr;
 static OpenJtalkRc* openJtalk = nullptr;
 
 extern "C" JNIEXPORT jboolean JNICALL
