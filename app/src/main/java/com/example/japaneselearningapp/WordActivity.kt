@@ -105,7 +105,7 @@ fun WordListPage(lessonId: Int, onBack: () -> Unit) {
                     onLongPress = {
                         if (TtsConfig.isInitialized()) {
                             val cleanedWord = cleanJapaneseWord(word.wordJp)
-                            TtsConfig.speak(cleanedWord, "ja", TtsConfig.JapaneseVoices.FEMALE_ALPHA, 0.7f) { success, error ->
+                            TtsConfig.speak(cleanedWord, "ja", TtsConfig.JapaneseVoices.MALE_OMEGA, 0.7f) { success, error ->
                                 if (!success) {
                                     Log.e("WordActivity", "TTS 播放失败: $error")
                                 }
@@ -207,12 +207,12 @@ private fun cleanJapaneseWord(word: String): String {
     return word.trim()
         // 1. 清除开头 [词性] 方括号标注
         .replace(Regex("^\\[.*?\\]"), "")
-        // 2. 清除首尾波浪号 ~
-        .replace(Regex("^~+|~+$"), "")
+        // 2. 清除首尾波浪号（包含半角~和全角～）
+        .replace(Regex("^[~～]+|[~～]+$"), "")
         // 3. 同时匹配半角( 与全角（，删除括号前空格 + 括号及后面所有内容
         .replace(Regex("\\s*[(（].*"), "")
-        // 4. 清除末尾空格+带圈数字①~⑩
-        .replace(Regex("\\s*[①②③④⑤⑥⑦⑧⑨⑩]$"), "")
+        // 4. 清除末尾空格+带圈数字⓪~⑩
+        .replace(Regex("\\s*[⓪①②③④⑤⑥⑦⑧⑨⑩]$"), "")
         // 最后清理一遍多余空格
         .trim()
 }
