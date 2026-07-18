@@ -131,8 +131,8 @@ object VoicevoxTtsConfig {
     private fun playAudio(wavData: ByteArray) {
         try {
             val sampleRate = 24000
-            val channelConfig = AudioTrack.CHANNEL_OUT_MONO
-            val audioFormat = android.media.AudioFormat.ENCODING_PCM_16BIT
+            val channelConfig = AudioFormat.CHANNEL_OUT_MONO
+            val audioFormat = AudioFormat.ENCODING_PCM_16BIT
             val bufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
 
             audioTrack = AudioTrack(
