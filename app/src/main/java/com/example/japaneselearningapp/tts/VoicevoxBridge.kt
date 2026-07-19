@@ -7,10 +7,15 @@ class VoicevoxBridge {
     external fun release()
 
     companion object {
-        init {
-            System.loadLibrary("voicevox_core")
-            System.loadLibrary("voicevox_onnxruntime")
-            System.loadLibrary("voicevox_jni")
+        private var loaded = false
+
+        fun loadLibraries() {
+            if (!loaded) {
+                System.loadLibrary("voicevox_core")
+                System.loadLibrary("voicevox_onnxruntime")
+                System.loadLibrary("voicevox_jni")
+                loaded = true
+            }
         }
     }
 }

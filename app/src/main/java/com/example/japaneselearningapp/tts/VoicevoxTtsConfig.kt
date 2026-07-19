@@ -33,6 +33,7 @@ object VoicevoxTtsConfig {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                VoicevoxBridge.loadLibraries()
                 bridge = VoicevoxBridge()
 
                 val dictPath = "${context.filesDir.absolutePath}/open_jtalk_dic_utf_8-1.11"
