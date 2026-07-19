@@ -36,13 +36,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.example.japaneselearningapp.tts.TtsConfig
-
+import com.example.japaneselearningapp.tts.VoicevoxTtsConfig
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         lifecycleScope.launch {
-            TtsConfig.initialize(this@MainActivity) { success, error ->
+            VoicevoxTtsConfig.initialize(this@MainActivity) { success, error ->
                 if (success) {
                     Log.d("MainActivity", "TTS 引擎初始化成功")
                 } else {
@@ -183,14 +183,3 @@ fun JapaneseLearningHomePage(
         }
     }
 }
-// ---------------------- 预览入口 ----------------------
-        @Preview(showBackground = true, name = "首页预览")
-        @Composable
-        fun JapaneseLearningHomePagePreview() {
-            JapaneseLearningAppTheme {
-                JapaneseLearningHomePage(
-                    onLevelClick = {},
-                    onFunctionClick = {}
-                )
-            }
-        }
