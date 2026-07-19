@@ -17,7 +17,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { setUrl("https://jitpack.io") }
-        maven { setUrl("c:/TraeProjects/Bert-VITS2-MNN/build/repo") }
+        // maven { setUrl("c:/TraeProjects/Bert-VITS2-MNN/build/repo") }
     }
 }
 

@@ -76,6 +76,10 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
+    // Bert-VITS2-MNN 安卓库（暂时注释，等待本地构建）
+    // implementation("com.example.bertvits2mnn:bertvits2-infer-wrapper:2.0.0")
+    // implementation("com.example.bertvits2mnn:text-preprocess:2.0.0")
+    // implementation("com.example.bertvits2mnn:bertvits2-jni:2.0.0")
     // OkHttp 网络库（支持 HTTP 和 SSE 流式）
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:okhttp-sse:4.12.0")

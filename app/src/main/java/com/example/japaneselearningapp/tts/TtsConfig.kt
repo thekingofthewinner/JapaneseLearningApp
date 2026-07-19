@@ -1,7 +1,11 @@
 package com.example.japaneselearningapp.tts
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioTrack
 import android.util.Log
+// import com.example.bertvits2_infer_wrapper.impl.BertVITS2SimpleInferImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,6 +44,7 @@ object TtsConfig {
         const val DEFAULT = CHARACTER_A
     }
     
+    // private var ttsEngine: BertVITS2SimpleInferImpl? = null
     private var isInitialized = false
     
     fun initialize(context: Context, onComplete: (Boolean, String?) -> Unit) {
@@ -69,17 +74,24 @@ object TtsConfig {
     }
     
     fun release() {
+        // ttsEngine?.release()
+        // ttsEngine = null
         isInitialized = false
         Log.d(TAG, "TTS 引擎已释放")
     }
     
     fun stop() {
-        Log.d(TAG, "停止播放")
+        try {
+            Log.d(TAG, "停止播放")
+        } catch (e: Exception) {
+            Log.e(TAG, "停止播放时出错", e)
+        }
     }
     
     fun isInitialized(): Boolean = isInitialized
     
     fun getAvailableVoices(): List<String> {
+        // return ttsEngine?.getSpkNameList() ?: emptyList()
         return emptyList()
     }
 }
