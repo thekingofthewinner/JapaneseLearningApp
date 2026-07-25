@@ -85,17 +85,6 @@ target_link_options(${APP_NAME} PRIVATE "-Wl,-z,max-page-size=16384")
 
 # ============ VoiceVox JNI 库 ============
 
-# IMPORTED_SONAME 让链接器在 DT_NEEDED 中只记录 soname (libvoicevox_core.so)，
-# 而非构建时的绝对路径，这样 Android 运行时能从 APK 的 lib 目录找到库
-add_library(voicevox_core SHARED IMPORTED)
-set_target_properties(voicevox_core
-  PROPERTIES
-    IMPORTED_LOCATION
-      ${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}/libvoicevox_core.so
-    IMPORTED_SONAME
-      libvoicevox_core.so
-)
-
 add_library(voicevox_jni SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/voicevox/voicevox_jni.cpp
 )
@@ -105,8 +94,11 @@ target_include_directories(voicevox_jni PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 find_library(log-lib log)
 find_library(android-lib android)
 
+# 使用原始链接器标志 -L + -l，确保 DT_NEEDED 只记录 soname (libvoicevox_core.so)
+# 而非构建时的绝对路径
 target_link_libraries(voicevox_jni
-  voicevox_core
+  "-L${CMAKE_CURRENT_SOURCE_DIR}/../jniLibs/${ANDROID_ABI}"
+  "-lvoicevox_core"
   ${log-lib}
   ${android-lib}
 )
