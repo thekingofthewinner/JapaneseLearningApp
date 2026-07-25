@@ -33,7 +33,14 @@ object VoicevoxTtsConfig {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                VoicevoxBridge.loadLibraries()
+                val loadResult = VoicevoxBridge.loadLibraries()
+                if (!loadResult) {
+                    Log.e(TAG, "Native 库加载失败")
+                    withContext(Dispatchers.Main) {
+                        onComplete(false, "Native 库加载失败，请检查 Logcat")
+                    }
+                    return@launch
+                }
                 bridge = VoicevoxBridge()
 
                 val dictPath = "${context.filesDir.absolutePath}/open_jtalk_dic_utf_8-1.11"
@@ -73,7 +80,7 @@ object VoicevoxTtsConfig {
                         onComplete(false, "VoiceVox 引擎初始化失败")
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 val errorMsg = "VoiceVox TTS 引擎初始化失败: ${e.message}"
                 Log.e(TAG, errorMsg, e)
                 bridge?.release()
@@ -119,7 +126,7 @@ object VoicevoxTtsConfig {
                         onComplete?.invoke(false, "语音生成失败")
                     }
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 val errorMsg = "语音合成失败: ${e.message}"
                 Log.e(TAG, errorMsg, e)
                 withContext(Dispatchers.Main) {
