@@ -44,7 +44,7 @@ object VoicevoxTtsConfig {
                 bridge = VoicevoxBridge()
 
                 val dictPath = "${context.filesDir.absolutePath}/open_jtalk_dic_utf_8-1.11"
-                val onnxruntimePath = "${context.applicationInfo.nativeLibraryDir}/libvoicevox_onnxruntime.so"
+                val onnxruntimePath = "libvoicevox_onnxruntime.so"
 
                 Log.d(TAG, "字典路径: $dictPath")
                 Log.d(TAG, "ONNX Runtime路径: $onnxruntimePath")
