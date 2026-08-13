@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.onGloballyPositioned
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -96,6 +97,13 @@ fun WordQuizPage(lessonId: Int) {
     // 让其内部 LaunchedEffect(Unit) 重新读取 parties 并喷射。
     var confettiKey by remember { mutableStateOf(0) }
 
+    // 精确捕捉单词框在最外层 Box（与 KonfettiView 同尺寸）中的位置
+    var containerWidth by remember { mutableStateOf(0) }
+    var containerHeight by remember { mutableStateOf(0) }
+    var wordBoxLeftRel by remember { mutableStateOf(0.05) }   // 左 x 相对坐标 (0~1)
+    var wordBoxRightRel by remember { mutableStateOf(0.95) }  // 右 x 相对坐标
+    var wordBoxBottomRel by remember { mutableStateOf(0.45) } // 底 y 相对坐标
+
     // 根据 currentWordIndex 生成下一道题（复用，避免重复代码）
     fun generateNextQuiz() {
         if (currentWordIndex < quizWords.size) {
@@ -147,15 +155,16 @@ fun WordQuizPage(lessonId: Int) {
             completedCount++
             confettiKey++
 
+            // 彩蛋从单词框的左右下角精确喷出（通过 onGloballyPositioned 实时定位）
             parties = listOf(
                 Party(
                     emitter = Emitter(duration = 1, TimeUnit.SECONDS).perSecond(100),
-                    position = Position.Relative(0.1, 1.0),
+                    position = Position.Relative(wordBoxLeftRel, wordBoxBottomRel),
                     colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def)
                 ),
                 Party(
                     emitter = Emitter(duration = 1, TimeUnit.SECONDS).perSecond(100),
-                    position = Position.Relative(0.9, 1.0),
+                    position = Position.Relative(wordBoxRightRel, wordBoxBottomRel),
                     colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def)
                 )
             )
@@ -170,10 +179,13 @@ fun WordQuizPage(lessonId: Int) {
             if (currentWordIndex >= quizWords.size) {
                 showCompletionConfetti = true
                 confettiKey++
+                // timeToLive 从默认 2000ms 延长到 5000ms，
+                // 确保从顶部 (0.5, 0.0) 出发的彩带能一路落到底部再消散。
                 parties = listOf(
                     Party(
                         emitter = Emitter(duration = 3, TimeUnit.SECONDS).perSecond(200),
                         position = Position.Relative(0.5, 0.0),
+                        timeToLive = 5000,
                         colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def)
                     )
                 )
@@ -183,7 +195,14 @@ fun WordQuizPage(lessonId: Int) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { coords ->
+                containerWidth = coords.size.width
+                containerHeight = coords.size.height
+            }
+    ) {
         // safeDrawing 包含 statusBars（含刘海/挖孔）+ 底部导航栏，
         // 确保标题"单词训练"不会被前置摄像头挡住，底部也不会被横条遮挡。
         val safePadding = WindowInsets.safeDrawing.asPaddingValues()
@@ -235,6 +254,18 @@ fun WordQuizPage(lessonId: Int) {
                             .height(0.dp)
                             .weight(0.3f)
                             .padding(horizontal = 16.dp)
+                            .onGloballyPositioned { coords ->
+                                if (containerWidth > 0 && containerHeight > 0) {
+                                    val boundsInContainer =
+                                        coords.boundsInParent() // 在外层 Box 坐标系中
+                                    wordBoxLeftRel =
+                                        boundsInContainer.left.toDouble() / containerWidth
+                                    wordBoxRightRel =
+                                        boundsInContainer.right.toDouble() / containerWidth
+                                    wordBoxBottomRel =
+                                        boundsInContainer.bottom.toDouble() / containerHeight
+                                }
+                            }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
