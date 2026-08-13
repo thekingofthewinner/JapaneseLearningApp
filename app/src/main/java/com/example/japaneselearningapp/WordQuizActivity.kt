@@ -57,9 +57,10 @@ import java.util.concurrent.TimeUnit
 class WordQuizActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 让内容延伸到状态栏区域，配合 WindowInsets.safeDrawing
+        // 让内容延伸到状态栏/导航栏区域，配合 WindowInsets.safeDrawing
         // 才能正确避开前置摄像头（刘海/挖孔）和底部导航横条。
-        androidx.activity.enableEdgeToEdge()
+        // 用 WindowCompat 替代 activity-ktx 的 enableEdgeToEdge()，避免额外依赖要求。
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         val lessonId = intent.getIntExtra("LESSON_ID", 1)
 
         setContent {
@@ -95,20 +96,6 @@ fun WordQuizPage(lessonId: Int) {
     // 让其内部 LaunchedEffect(Unit) 重新读取 parties 并喷射。
     var confettiKey by remember { mutableStateOf(0) }
 
-    LaunchedEffect(allWords) {
-        if (allWords.isNotEmpty()) {
-            quizWords = allWords.shuffled()
-            currentWordIndex = 0
-            selectedOptionIndex = null
-            isCorrect = null
-            completedCount = 0
-            showCompletionConfetti = false
-
-            // 直接生成第一个题目
-            generateNextQuiz()
-        }
-    }
-
     // 根据 currentWordIndex 生成下一道题（复用，避免重复代码）
     fun generateNextQuiz() {
         if (currentWordIndex < quizWords.size) {
@@ -131,6 +118,20 @@ fun WordQuizPage(lessonId: Int) {
             )
             selectedOptionIndex = null
             isCorrect = null
+        }
+    }
+
+    LaunchedEffect(allWords) {
+        if (allWords.isNotEmpty()) {
+            quizWords = allWords.shuffled()
+            currentWordIndex = 0
+            selectedOptionIndex = null
+            isCorrect = null
+            completedCount = 0
+            showCompletionConfetti = false
+
+            // 直接生成第一个题目
+            generateNextQuiz()
         }
     }
 
