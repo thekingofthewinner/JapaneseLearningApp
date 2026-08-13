@@ -12,10 +12,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +57,9 @@ import java.util.concurrent.TimeUnit
 class WordQuizActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 让内容延伸到状态栏区域，配合 WindowInsets.safeDrawing
+        // 才能正确避开前置摄像头（刘海/挖孔）和底部导航横条。
+        androidx.activity.enableEdgeToEdge()
         val lessonId = intent.getIntExtra("LESSON_ID", 1)
 
         setContent {
@@ -78,11 +87,13 @@ fun WordQuizPage(lessonId: Int) {
     var currentQuiz by remember { mutableStateOf<QuizData?>(null) }
     var selectedOptionIndex by remember { mutableStateOf<Int?>(null) }
     var isCorrect by remember { mutableStateOf<Boolean?>(null) }
-    var showConfetti by remember { mutableStateOf(false) }
     var showCompletionConfetti by remember { mutableStateOf(false) }
     var completedCount by remember { mutableStateOf(0) }
 
     var parties by remember { mutableStateOf<List<Party>>(emptyList()) }
+    // 每次发起一轮新彩蛋就自增，配合 key() 强制 KonfettiView 重建子树，
+    // 让其内部 LaunchedEffect(Unit) 重新读取 parties 并喷射。
+    var confettiKey by remember { mutableStateOf(0) }
 
     LaunchedEffect(allWords) {
         if (allWords.isNotEmpty()) {
@@ -94,53 +105,34 @@ fun WordQuizPage(lessonId: Int) {
             showCompletionConfetti = false
 
             // 直接生成第一个题目
-            if (quizWords.isNotEmpty()) {
-                val currentWord = quizWords[0]
-                val displayJapanese = kotlin.random.Random.nextBoolean()
-
-                val wrongOptions = quizWords
-                    .filter { it.id != currentWord.id }
-                    .shuffled()
-                    .take(3)
-
-                val allOptions = (wrongOptions + currentWord).shuffled()
-                val correctIndex = allOptions.indexOf(currentWord)
-
-                currentQuiz = QuizData(
-                    word = currentWord,
-                    displayJapanese = displayJapanese,
-                    options = allOptions,
-                    correctIndex = correctIndex
-                )
-            }
+            generateNextQuiz()
         }
     }
 
-//    val generateQuiz = remember {
-//        {
-//            if (currentWordIndex < quizWords.size) {
-//                val currentWord = quizWords[currentWordIndex]
-//                val displayJapanese = kotlin.random.Random.nextBoolean()
-//
-//                val wrongOptions = quizWords
-//                    .filter { it.id != currentWord.id }
-//                    .shuffled()
-//                    .take(3)
-//
-//                val allOptions = (wrongOptions + currentWord).shuffled()
-//                val correctIndex = allOptions.indexOf(currentWord)
-//
-//                currentQuiz = QuizData(
-//                    word = currentWord,
-//                    displayJapanese = displayJapanese,
-//                    options = allOptions,
-//                    correctIndex = correctIndex
-//                )
-//                selectedOptionIndex = null
-//                isCorrect = null
-//            }
-//        }
-//    }
+    // 根据 currentWordIndex 生成下一道题（复用，避免重复代码）
+    fun generateNextQuiz() {
+        if (currentWordIndex < quizWords.size) {
+            val currentWord = quizWords[currentWordIndex]
+            val displayJapanese = kotlin.random.Random.nextBoolean()
+
+            val wrongOptions = quizWords
+                .filter { it.id != currentWord.id }
+                .shuffled()
+                .take(3)
+
+            val allOptions = (wrongOptions + currentWord).shuffled()
+            val correctIndex = allOptions.indexOf(currentWord)
+
+            currentQuiz = QuizData(
+                word = currentWord,
+                displayJapanese = displayJapanese,
+                options = allOptions,
+                correctIndex = correctIndex
+            )
+            selectedOptionIndex = null
+            isCorrect = null
+        }
+    }
 
     fun handleOptionClick(index: Int) {
         if (selectedOptionIndex != null) return
@@ -152,71 +144,58 @@ fun WordQuizPage(lessonId: Int) {
 
         if (correct) {
             completedCount++
-            showConfetti = true
+            confettiKey++
 
             parties = listOf(
                 Party(
                     emitter = Emitter(duration = 1, TimeUnit.SECONDS).perSecond(100),
                     position = Position.Relative(0.1, 1.0),
-                    colors = listOf(0xF44336, 0xE91E63, 0x9C27B0, 0x673AB7, 0x3F51B5, 0x2196F3, 0x03A9F4, 0x00BCD4, 0x009688, 0x4CAF50, 0x8BC34A, 0xCDDC39, 0xFFEB3B, 0xFFC107, 0xFF9800, 0xFF5722)
+                    colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def)
                 ),
                 Party(
                     emitter = Emitter(duration = 1, TimeUnit.SECONDS).perSecond(100),
                     position = Position.Relative(0.9, 1.0),
-                    colors = listOf(0xF44336, 0xE91E63, 0x9C27B0, 0x673AB7, 0x3F51B5, 0x2196F3, 0x03A9F4, 0x00BCD4, 0x009688, 0x4CAF50, 0x8BC34A, 0xCDDC39, 0xFFEB3B, 0xFFC107, 0xFF9800, 0xFF5722)
+                    colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def)
                 )
             )
+        }
 
-            scope.launch {
-                delay(1500)
-                showConfetti = false
-                parties = emptyList()
+        // 无论对错，延迟后都自动切换下一题；选错时延长延迟以便看清正确答案
+        scope.launch {
+            delay(if (correct) 1500 else 2000)
+            parties = emptyList()
 
-                currentWordIndex++
-                if (currentWordIndex >= quizWords.size) {
-                    showCompletionConfetti = true
-                    parties = listOf(
-                        Party(
-                            emitter = Emitter(duration = 3, TimeUnit.SECONDS).perSecond(200),
-                            position = Position.Relative(0.5, 0.0),
-                            colors = listOf(0xF44336, 0xE91E63, 0x9C27B0, 0x673AB7, 0x3F51B5, 0x2196F3, 0x03A9F4, 0x00BCD4, 0x009688, 0x4CAF50, 0x8BC34A, 0xCDDC39, 0xFFEB3B, 0xFFC107, 0xFF9800, 0xFF5722)
-                        )
+            currentWordIndex++
+            if (currentWordIndex >= quizWords.size) {
+                showCompletionConfetti = true
+                confettiKey++
+                parties = listOf(
+                    Party(
+                        emitter = Emitter(duration = 3, TimeUnit.SECONDS).perSecond(200),
+                        position = Position.Relative(0.5, 0.0),
+                        colors = listOf(0xfce18a, 0xff726d, 0xf4306d, 0xb48def)
                     )
-                } else {
-                    // 直接生成下一个题目
-                    val currentWord = quizWords[currentWordIndex]
-                    val displayJapanese = kotlin.random.Random.nextBoolean()
-
-                    val wrongOptions = quizWords
-                        .filter { it.id != currentWord.id }
-                        .shuffled()
-                        .take(3)
-
-                    val allOptions = (wrongOptions + currentWord).shuffled()
-                    val correctIndex = allOptions.indexOf(currentWord)
-
-                    currentQuiz = QuizData(
-                        word = currentWord,
-                        displayJapanese = displayJapanese,
-                        options = allOptions,
-                        correctIndex = correctIndex
-                    )
-                    selectedOptionIndex = null
-                    isCorrect = null
-                }
+                )
+            } else {
+                generateNextQuiz()
             }
         }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // safeDrawing 包含 statusBars（含刘海/挖孔）+ 底部导航栏，
+        // 确保标题"单词训练"不会被前置摄像头挡住，底部也不会被横条遮挡。
+        val safePadding = WindowInsets.safeDrawing.asPaddingValues()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White),
+                .background(Color.White)
+                .padding(
+                    top = safePadding.calculateTopPadding() + 8.dp,
+                    bottom = safePadding.calculateBottomPadding() + 16.dp
+                ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "单词训练",
                 fontSize = 24.sp,
@@ -253,32 +232,41 @@ fun WordQuizPage(lessonId: Int) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(0.dp)
-                            .weight(0.4f)
+                            .weight(0.3f)
                             .padding(horizontal = 16.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     OptionsGrid(
                         options = quiz.options,
                         displayJapanese = quiz.displayJapanese,
                         selectedIndex = selectedOptionIndex,
+                        correctIndex = quiz.correctIndex,
                         isCorrect = isCorrect,
                         onOptionClick = { handleOptionClick(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(0.dp)
-                            .weight(0.18f)
+                            .weight(0.7f)
                             .padding(horizontal = 16.dp)
                     )
                 }
             }
         }
 
-        KonfettiView(
-            modifier = Modifier.fillMaxSize(),
-            parties = parties
-        )
+        // KonfettiView 内部用 LaunchedEffect(Unit) 只在进入组合时读取 parties，
+        // 因此必须条件挂载：parties 非空时才把它放入组合，清空时移除；
+        // 再用 key(confettiKey) 强制每轮新彩蛋重建子树，确保连续两轮（如答对后接完成彩蛋）
+        // 不会因未卸载而漏喷。
+        if (parties.isNotEmpty()) {
+            key(confettiKey) {
+                KonfettiView(
+                    modifier = Modifier.fillMaxSize(),
+                    parties = parties
+                )
+            }
+        }
     }
 }
 
@@ -316,50 +304,59 @@ fun OptionsGrid(
     options: List<WordEntity>,
     displayJapanese: Boolean,
     selectedIndex: Int?,
+    correctIndex: Int,
     isCorrect: Boolean?,
     onOptionClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OptionButton(
                 text = if (displayJapanese) options[0].wordCn else options[0].wordJp,
                 isSelected = selectedIndex == 0,
+                isCorrectOption = correctIndex == 0,
+                isAnswered = isCorrect != null,
                 isCorrect = isCorrect,
                 onClick = { onOptionClick(0) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
             OptionButton(
                 text = if (displayJapanese) options[1].wordCn else options[1].wordJp,
                 isSelected = selectedIndex == 1,
+                isCorrectOption = correctIndex == 1,
+                isAnswered = isCorrect != null,
                 isCorrect = isCorrect,
                 onClick = { onOptionClick(1) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             OptionButton(
                 text = if (displayJapanese) options[2].wordCn else options[2].wordJp,
                 isSelected = selectedIndex == 2,
+                isCorrectOption = correctIndex == 2,
+                isAnswered = isCorrect != null,
                 isCorrect = isCorrect,
                 onClick = { onOptionClick(2) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
             OptionButton(
                 text = if (displayJapanese) options[3].wordCn else options[3].wordJp,
                 isSelected = selectedIndex == 3,
+                isCorrectOption = correctIndex == 3,
+                isAnswered = isCorrect != null,
                 isCorrect = isCorrect,
                 onClick = { onOptionClick(3) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).fillMaxHeight()
             )
         }
     }
@@ -369,27 +366,32 @@ fun OptionsGrid(
 fun OptionButton(
     text: String,
     isSelected: Boolean,
+    isCorrectOption: Boolean,
+    isAnswered: Boolean,
     isCorrect: Boolean?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 已作答后：正确答案恒为绿；选错的选项为红；其余为白
     val backgroundColor = when {
-        isSelected && isCorrect == true -> Color(0xFF4CAF50)
+        !isAnswered -> Color.White
+        isCorrectOption -> Color(0xFF4CAF50)
         isSelected && isCorrect == false -> Color(0xFFF44336)
         else -> Color.White
     }
 
     val textColor = when {
-        isSelected && isCorrect == true -> Color.White
+        !isAnswered -> Color.Black
+        isCorrectOption -> Color.White
         isSelected && isCorrect == false -> Color.White
         else -> Color.Black
     }
 
     Box(
         modifier = modifier
-            .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
-            .background(backgroundColor, RoundedCornerShape(12.dp))
-            .clickable(enabled = !isSelected) { onClick() },
+            .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
+            .background(backgroundColor, RoundedCornerShape(16.dp))
+            .clickable(enabled = !isAnswered) { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
