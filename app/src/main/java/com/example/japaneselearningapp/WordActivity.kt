@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import com.example.japaneselearningapp.data.AppDatabase
 import com.example.japaneselearningapp.data.entity.WordEntity
 import com.example.japaneselearningapp.tts.TtsConfig
+import com.example.japaneselearningapp.tts.VoicevoxTtsConfig
+import com.example.japaneselearningapp.tts.VoicevoxTtsConfig.DEFAULT_STYLE_ID
 import com.example.japaneselearningapp.ui.theme.JapaneseLearningAppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -103,12 +105,10 @@ fun WordListPage(lessonId: Int, onBack: () -> Unit) {
                 WordCard(
                     word = word,
                     onLongPress = {
-                        if (TtsConfig.isInitialized()) {
-                            val cleanedWord = cleanJapaneseWord(word.wordJp)
-                            TtsConfig.speak(cleanedWord, "ja", TtsConfig.JapaneseVoices.MALE_OMEGA, 0.7f) { success, error ->
-                                if (!success) {
-                                    Log.e("WordActivity", "TTS 播放失败: $error")
-                                }
+                        val cleanedWord = cleanJapaneseWord(word.wordJp)
+                        VoicevoxTtsConfig.speak(cleanedWord, "ja", DEFAULT_STYLE_ID, 0.7f) { success, error ->
+                            if (!success) {
+                                Log.e("WordActivity", "TTS 播放失败: $error")
                             }
                         }
                     }

@@ -16,6 +16,8 @@ import androidx.core.content.ContextCompat
 import com.example.japaneselearningapp.asr.AudioRecorder
 import com.example.japaneselearningapp.network.MockApiService
 import com.example.japaneselearningapp.tts.TtsConfig
+import com.example.japaneselearningapp.tts.VoicevoxTtsConfig
+import com.example.japaneselearningapp.tts.VoicevoxTtsConfig.JapaneseVoices.KYUSHU_SORA_NORMAL
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -140,7 +142,7 @@ class Live2DActivity : AppCompatActivity() {
         Log.d(TAG, "检查引擎状态...")
 
         // TTS 已在 MainActivity 中初始化，直接检查状态
-        if (TtsConfig.isInitialized()) {
+        if (VoicevoxTtsConfig.isInitialized()) {
             Log.d(TAG, "TTS 引擎已就绪")
         } else {
             Log.e(TAG, "TTS 引擎未初始化")
@@ -182,7 +184,7 @@ class Live2DActivity : AppCompatActivity() {
      */
     private fun startConversation() {
         // 播放欢迎语（如果TTS可用）
-        if (TtsConfig.isInitialized()) {
+        if (VoicevoxTtsConfig.isInitialized()) {
             speakText("こんにちは！私は AI アシスタントの春です。いつも画面の前の皆さんとお話できるのを楽しみに待っています。日常のちょっとした雑談はもちろん、疑問の解決や知りたい情報の調べ、気分転換のお喋りまで、どんな小さなことでも気軽に話しかけてください。あなたの言葉をしっかり受け止めて、優しくお返事いたします。", "ja") {
             }
         } else {
@@ -249,7 +251,7 @@ class Live2DActivity : AppCompatActivity() {
      * 播放语音
      */
     private fun speakText(text: String, language: String, onComplete: () -> Unit = {}) {
-        if (!TtsConfig.isInitialized()) {
+        if (!VoicevoxTtsConfig.isInitialized()) {
             Toast.makeText(this, "TTS 引擎尚未初始化", Toast.LENGTH_SHORT).show()
             isProcessing.set(false)
             startListening()
@@ -261,11 +263,11 @@ class Live2DActivity : AppCompatActivity() {
         isSpeaking.set(true)
         updateVoiceStatus(VoiceStatus.SPEAKING_AI)
 
-        TtsConfig.speak(
+        VoicevoxTtsConfig.speak(
             text = text,
             language = language,
-            voiceStyle = TtsConfig.JapaneseVoices.FEMALE_ALPHA,
-            speed = 0.5f  // 降低语速，0.5-0.7 比较自然
+            styleId = VoicevoxTtsConfig.DEFAULT_STYLE_ID,
+            speed = 1f  // 降低语速，0.5-0.7 比较自然
         ) { success, error ->
             isSpeaking.set(false)
             runOnUiThread {

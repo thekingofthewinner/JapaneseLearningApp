@@ -294,12 +294,16 @@ fun LessonDetailPage(
 
                             // 习题练习按钮
                             IconButton(
-                                onClick = { showQuiz = !showQuiz }
+                                onClick = {
+                                    val intent = Intent(context, WordQuizActivity::class.java)
+                                    intent.putExtra("LESSON_ID", lessonId)
+                                    context.startActivity(intent)
+                                }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.Quiz,
-                                    contentDescription = "习题",
-                                    tint = if (showQuiz) Color(0xFF4A90E2) else Color(0xFF87CEEB),
+                                    imageVector = Icons.Filled.Quiz, // 或者使用其他合适的图标
+                                    contentDescription = "单词训练",
+                                    tint = if (showWords) Color(0xFF4A90E2) else Color(0xFF87CEEB),
                                     modifier = Modifier.size(28.dp)
                                 )
                             }

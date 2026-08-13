@@ -86,6 +86,11 @@
                 android:exported="false"
                 android:label="单词列表"
                 android:theme="@style/Theme.JapaneseLearningApp" />
+        <activity
+                android:name=".WordQuizActivity"
+                android:exported="false"
+                android:label="单词训练"
+                android:theme="@style/Theme.JapaneseLearningApp" />
     </application>
 
 </manifest>

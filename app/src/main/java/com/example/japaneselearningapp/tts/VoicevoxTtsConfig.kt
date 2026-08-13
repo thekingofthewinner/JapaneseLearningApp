@@ -218,4 +218,5 @@ object VoicevoxTtsConfig {
             }
         }
     }
+    fun isInitialized() = isInitialized
 }
